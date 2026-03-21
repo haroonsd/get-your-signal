@@ -3,610 +3,853 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Signal - Tasks</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <title>Signal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    .cell-input { width:100%; padding:4px 6px; border:1px solid transparent; border-radius:6px; background:transparent; outline:none; }
-    .cell-input:focus { border-color:#6366f1; background:#eef2ff; }
-    .header-edit-icon { opacity:0; transition:opacity .15s; }
-    th:hover .header-edit-icon { opacity:1; }
-    .modal-backdrop { background: rgba(15,23,42,0.45); backdrop-filter: blur(4px); }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-    .fade-in { animation: fadeIn .2s ease-out; }
-    .toast { position:fixed; bottom:100px; right:24px; background:#1e293b; color:#fff; padding:10px 18px; border-radius:10px; font-size:13px; z-index:9999; animation: fadeIn .2s ease-out; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand: #5B4FE8;
+      --brand-light: #EEF0FF;
+      --brand-dark: #4338CA;
+      --surface: #ffffff;
+      --surface-2: #F7F8FA;
+      --surface-3: #F0F1F5;
+      --border: #E4E6EE;
+      --border-strong: #C9CCDA;
+      --text-1: #0F1117;
+      --text-2: #5A5F72;
+      --text-3: #9499AD;
+      --red: #EF4444; --red-bg: #FEF2F2; --red-text: #991B1B;
+      --amber: #F59E0B; --amber-bg: #FFFBEB; --amber-text: #92400E;
+      --green: #10B981; --green-bg: #ECFDF5; --green-text: #065F46;
+      --blue: #3B82F6; --blue-bg: #EFF6FF; --blue-text: #1E40AF;
+      --purple-bg: #EEF0FF; --purple-text: #4338CA;
+      --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+      --sidebar: 232px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.05);
+    }
+
+    body { font-family: 'Inter', sans-serif; background: var(--surface-2); color: var(--text-1); height: 100vh; overflow: hidden; display: flex; font-size: 13px; line-height: 1.5; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar); min-width: var(--sidebar);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 0; overflow: hidden;
+    }
+    #sidebar-top { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 16px; }
+    .logo-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: var(--brand); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .logo-text { font-size: 16px; font-weight: 600; color: var(--text-1); letter-spacing: -0.3px; }
+
+    #cloud-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: var(--radius-sm);
+      background: var(--surface-2); font-size: 11px; font-weight: 500; color: var(--text-3);
+    }
+    .cloud-dot { width: 6px; height: 6px; border-radius: 50%; background: #C9CCDA; flex-shrink:0; }
+    .cloud-dot.green { background: var(--green); }
+    .cloud-dot.blue { background: var(--blue); animation: pulse 1.5s infinite; }
+    .cloud-dot.red { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    #sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .8px; padding: 8px 8px 4px; }
+    .nav-proj-btn {
+      width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+      padding: 7px 10px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-2);
+      display: flex; align-items: center; gap: 8px; transition: background .12s, color .12s;
+    }
+    .nav-proj-btn:hover { background: var(--surface-2); color: var(--text-1); }
+    .nav-proj-btn.active { background: var(--brand-light); color: var(--brand); font-weight: 500; }
+    .nav-proj-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); flex-shrink:0; }
+    .nav-proj-btn.active .nav-proj-dot { background: var(--brand); }
+    .nav-add-btn {
+      width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+      padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-3);
+      display: flex; align-items: center; gap: 6px; transition: color .12s;
+    }
+    .nav-add-btn:hover { color: var(--brand); }
+
+    #sidebar-footer { padding: 12px 10px; border-top: 1px solid var(--border); }
+    .sidebar-footer-btn {
+      width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+      padding: 7px 10px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-3);
+      display: flex; align-items: center; gap: 8px; transition: background .12s, color .12s;
+    }
+    .sidebar-footer-btn:hover { background: var(--surface-2); color: var(--text-2); }
+
+    /* ── Main ── */
+    #main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+    #topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    #topbar-left { display: flex; align-items: center; gap: 12px; }
+    #page-title { font-size: 15px; font-weight: 600; color: var(--text-1); }
+    .overdue-warning {
+      display: none; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 500; color: var(--red-text);
+      background: var(--red-bg); padding: 3px 9px; border-radius: 20px;
+    }
+    .overdue-warning.show { display: flex; }
+
+    #topbar-right { display: flex; align-items: center; gap: 8px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+      cursor: pointer; border: none; transition: background .12s, box-shadow .12s;
+    }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-primary:hover { background: var(--brand-dark); box-shadow: 0 2px 8px rgba(91,79,232,.3); }
+    .btn-ghost { background: none; border: 1px solid var(--border); color: var(--text-2); }
+    .btn-ghost:hover { background: var(--surface-2); }
+
+    /* ── Content ── */
+    #content { flex: 1; overflow: auto; padding: 20px 24px 100px; }
+
+    /* Stats */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 14px 16px;
+    }
+    .stat-card-label { font-size: 11px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .stat-card-val { font-size: 26px; font-weight: 600; color: var(--text-1); line-height: 1; }
+    .stat-card-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+    /* Table */
+    .table-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: auto;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: max-content; }
+    thead tr { background: var(--surface-2); border-bottom: 1px solid var(--border); }
+    th {
+      padding: 9px 12px; font-size: 11px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; user-select: none;
+    }
+    .th-inner { display: flex; align-items: center; gap: 4px; }
+    .th-sort { cursor: pointer; }
+    .th-sort:hover { color: var(--brand); }
+    .sort-icon { font-size: 10px; color: var(--text-3); }
+    .sort-icon.active { color: var(--brand); }
+    .th-filter { font-size: 9px; color: var(--text-3); cursor: pointer; padding: 1px 3px; border-radius: 3px; }
+    .th-filter:hover, .th-filter.active { color: var(--brand); background: var(--brand-light); }
+    .th-edit { font-size: 11px; color: var(--text-3); cursor: pointer; opacity: 0; padding: 1px 4px; border-radius: 3px; }
+    th:hover .th-edit { opacity: 1; }
+    .th-edit:hover { color: var(--brand); background: var(--brand-light); }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody tr.overdue-row { background: #FFF8F8; }
+    tbody tr.overdue-row:hover { background: #FEF2F2; }
+    tbody tr.dragging { opacity: .4; }
+    tbody tr.drag-over td { border-top: 2px solid var(--brand) !important; }
+    td { padding: 0; border: none; }
+    .td-inner { padding: 8px 12px; }
+
+    .row-num { font-size: 11px; color: var(--text-3); text-align: center; cursor: grab; width: 36px; padding: 8px 4px; }
+    .row-num:active { cursor: grabbing; }
+    .drag-icon { font-size: 12px; color: var(--border-strong); display: block; }
+
+    /* Cell inputs */
+    .cell-in {
+      width: 100%; background: none; border: 1px solid transparent; border-radius: var(--radius-sm);
+      padding: 4px 7px; font-size: 13px; color: var(--text-1); font-family: inherit; outline: none;
+      transition: border .12s, background .12s;
+    }
+    .cell-in:hover { border-color: var(--border); }
+    .cell-in:focus { border-color: var(--brand); background: var(--brand-light); }
+    .cell-task { font-weight: 500; }
+    .expand-btn { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 11px; padding: 2px 3px; border-radius: 3px; flex-shrink: 0; }
+    .expand-btn:hover { color: var(--brand); background: var(--brand-light); }
+
+    /* Badges / pills */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap;
+    }
+    .badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink:0; }
+    .badge select {
+      background: none; border: none; outline: none; font-size: 11px; font-weight: 500;
+      cursor: pointer; padding: 0; font-family: inherit; appearance: none; -webkit-appearance: none;
+    }
+    .s-todo    { background: var(--surface-3); color: var(--text-2); }
+    .s-todo    .badge-dot { background: var(--text-3); }
+    .s-todo    select { color: var(--text-2); }
+    .s-progress { background: var(--blue-bg); color: var(--blue-text); }
+    .s-progress .badge-dot { background: var(--blue); }
+    .s-progress select { color: var(--blue-text); }
+    .s-waiting  { background: var(--amber-bg); color: var(--amber-text); }
+    .s-waiting  .badge-dot { background: var(--amber); }
+    .s-waiting  select { color: var(--amber-text); }
+    .s-done     { background: var(--green-bg); color: var(--green-text); }
+    .s-done     .badge-dot { background: var(--green); }
+    .s-done     select { color: var(--green-text); }
+    .p-high     { background: var(--red-bg); color: var(--red-text); }
+    .p-high     .badge-dot { background: var(--red); }
+    .p-high     select { color: var(--red-text); }
+    .p-medium   { background: var(--amber-bg); color: var(--amber-text); }
+    .p-medium   .badge-dot { background: var(--amber); }
+    .p-medium   select { color: var(--amber-text); }
+    .p-low      { background: var(--green-bg); color: var(--green-text); }
+    .p-low      .badge-dot { background: var(--green); }
+    .p-low      select { color: var(--green-text); }
+    .overdue-date { color: var(--red) !important; font-weight: 600; }
+
+    /* Actions menu */
+    .action-btn { background: none; border: none; cursor: pointer; color: var(--text-3); padding: 4px 6px; border-radius: var(--radius-sm); font-size: 16px; line-height: 1; }
+    .action-btn:hover { background: var(--surface-3); color: var(--text-2); }
+    .action-menu-wrap { position: relative; display: inline-block; }
+    .action-menu {
+      position: absolute; right: 0; top: calc(100% + 4px); z-index: 50;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md); padding: 4px; min-width: 150px;
+    }
+    .action-menu-item {
+      display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none;
+      padding: 7px 10px; border-radius: var(--radius-sm); font-size: 12px; color: var(--text-2);
+      cursor: pointer; text-align: left; transition: background .1s;
+    }
+    .action-menu-item:hover { background: var(--surface-2); color: var(--text-1); }
+    .action-menu-item.danger { color: var(--red-text); }
+    .action-menu-item.danger:hover { background: var(--red-bg); }
+    .action-menu-sep { height: 1px; background: var(--border); margin: 3px 0; }
+    .action-menu-item:disabled { opacity: .35; pointer-events: none; }
+
+    /* Subtask rows */
+    .subtask-td { padding: 4px 12px 10px 48px !important; background: var(--surface-2) !important; }
+    .subtask-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+    .subtask-cb { width: 14px; height: 14px; accent-color: var(--brand); flex-shrink:0; cursor: pointer; }
+    .subtask-input {
+      flex: 1; background: none; border: 1px solid transparent; border-radius: 4px;
+      padding: 2px 6px; font-size: 12px; color: var(--text-1); font-family: inherit; outline: none;
+    }
+    .subtask-input:focus { border-color: var(--brand); background: var(--brand-light); }
+    .subtask-del { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 12px; padding: 2px 4px; border-radius: 3px; }
+    .subtask-del:hover { color: var(--red); background: var(--red-bg); }
+    .subtask-add-btn { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--brand); padding: 3px 0; margin-top: 4px; }
+    .subtask-add-btn:hover { text-decoration: underline; }
+    .add-col-btn { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-3); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .add-col-btn:hover { color: var(--brand); background: var(--brand-light); }
+
+    /* Filter menu */
+    .filter-menu {
+      position: absolute; top: calc(100% + 4px); left: 0; z-index: 60;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md); padding: 6px; min-width: 160px;
+    }
+    .filter-label { display: flex; align-items: center; gap: 7px; padding: 5px 6px; font-size: 12px; color: var(--text-2); cursor: pointer; border-radius: var(--radius-sm); }
+    .filter-label:hover { background: var(--surface-2); }
+    .filter-label input[type=checkbox] { accent-color: var(--brand); }
+    .filter-clear { font-size: 11px; color: var(--red-text); background: none; border: none; cursor: pointer; padding: 4px 6px; width: 100%; text-align: left; border-radius: var(--radius-sm); margin-top: 2px; }
+    .filter-clear:hover { background: var(--red-bg); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15,17,23,.4); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal {
+      background: var(--surface); border-radius: var(--radius-lg);
+      border: 1px solid var(--border); box-shadow: var(--shadow-md);
+      width: 100%; max-width: 460px; animation: modalIn .15s ease-out;
+    }
+    @keyframes modalIn { from{opacity:0;transform:scale(.97) translateY(6px)} to{opacity:1;transform:none} }
+    .modal-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 15px; font-weight: 600; }
+    .modal-close { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-3); line-height: 1; padding: 2px 5px; border-radius: 4px; }
+    .modal-close:hover { color: var(--text-1); background: var(--surface-2); }
+    .modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-foot { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-foot-right { display: flex; gap: 8px; }
+    label.field-label { font-size: 12px; font-weight: 500; color: var(--text-2); display: block; margin-bottom: 4px; }
+    .field-input {
+      width: 100%; padding: 8px 11px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;
+      color: var(--text-1); outline: none; background: var(--surface);
+    }
+    .field-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(91,79,232,.12); }
+    .field-hint { font-size: 11px; color: var(--text-3); margin-top: -8px; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-danger { background: var(--red-bg); color: var(--red-text); border: none; }
+    .btn-danger:hover { background: #FECACA; }
+    .btn-cancel { background: none; border: 1px solid var(--border); color: var(--text-2); }
+    .btn-cancel:hover { background: var(--surface-2); }
+
+    /* Command bar */
+    #cmd-bar {
+      position: fixed; bottom: 0; left: var(--sidebar); right: 0;
+      padding: 12px 24px 16px; background: linear-gradient(to top, var(--surface-2) 60%, transparent);
+      pointer-events: none;
+    }
+    .cmd-inner {
+      max-width: 720px; margin: 0 auto;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+      display: flex; gap: 8px; padding: 8px 8px 8px 14px;
+      pointer-events: all;
+    }
+    #cmd-input {
+      flex: 1; background: none; border: none; outline: none;
+      font-size: 13px; color: var(--text-1); font-family: inherit;
+    }
+    #cmd-input::placeholder { color: var(--text-3); }
+    .cmd-run { background: var(--brand); color: #fff; border: none; border-radius: var(--radius-sm); padding: 6px 16px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .12s; }
+    .cmd-run:hover { background: var(--brand-dark); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 80px; right: 24px; z-index: 200;
+      background: var(--text-1); color: #fff; padding: 10px 16px;
+      border-radius: var(--radius-md); font-size: 13px; font-weight: 500;
+      box-shadow: var(--shadow-md); animation: toastIn .2s ease-out;
+    }
+    @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
   </style>
 </head>
-<body class="h-screen overflow-hidden bg-gray-50 text-gray-900">
-<div class="h-full flex">
-  <!-- Sidebar -->
-  <aside class="w-64 border-r border-gray-200 bg-white p-4 flex flex-col gap-2">
-    <div class="flex items-center gap-2 mb-2">
-      <div class="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-        <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div id="sidebar-top">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="3" fill="white"/>
+          <path d="M9 2 L9 5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M9 13 L9 16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M2 9 L5 9" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M13 9 L16 9" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M4.1 4.1 L6.2 6.2" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+          <path d="M11.8 11.8 L13.9 13.9" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+          <path d="M13.9 4.1 L11.8 6.2" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+          <path d="M6.2 11.8 L4.1 13.9" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+        </svg>
       </div>
-      <span class="font-bold text-lg text-indigo-600">Signal</span>
+      <span class="logo-text">Signal</span>
     </div>
-    <div id="cloud-status" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-center">⚪ Not connected</div>
-    <div class="text-xs text-gray-400 uppercase font-medium mt-3 px-1">Projects</div>
-    <div id="project-list" class="flex flex-col gap-1"></div>
-    <button onclick="openProjectModal()" class="mt-1 text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 text-left">+ New Project</button>
-    <div class="mt-auto pt-4 border-t border-gray-100">
-      <button onclick="openCloudModal()" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-        <i data-lucide="cloud" class="w-4 h-4"></i> Cloud Settings
-      </button>
+    <div id="cloud-badge">
+      <span class="cloud-dot" id="cloud-dot"></span>
+      <span id="cloud-text">Not connected</span>
     </div>
-  </aside>
+  </div>
 
-  <!-- Main -->
-  <main class="flex-1 min-w-0 flex flex-col">
-    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <div>
-        <h1 id="project-title" class="text-xl font-semibold">Tasks</h1>
-        <p class="text-sm text-gray-500">Inline editing · cloud sync</p>
-      </div>
-      <div class="flex gap-2">
-        <button onclick="addTaskRow()" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1">
-          <i data-lucide="plus" class="w-4 h-4"></i> New Task
-        </button>
-      </div>
-    </header>
+  <div id="sidebar-nav">
+    <div class="nav-section-label">Projects</div>
+    <div id="project-list"></div>
+    <button class="nav-add-btn" onclick="openProjectModal()">
+      <span style="font-size:16px;line-height:1">+</span> New project
+    </button>
+  </div>
 
-    <section class="p-6 pb-28 flex-1 min-h-0 overflow-auto">
-      <!-- Stats -->
-      <div class="grid grid-cols-3 gap-4 mb-5">
-        <div class="bg-white border rounded-xl p-4">
-          <div class="text-xs text-gray-500 mb-1">Total</div>
-          <div id="stat-total" class="text-2xl font-bold">0</div>
-        </div>
-        <div class="bg-white border rounded-xl p-4">
-          <div class="text-xs text-gray-500 mb-1">In Progress</div>
-          <div id="stat-progress" class="text-2xl font-bold">0</div>
-        </div>
-        <div class="bg-white border rounded-xl p-4">
-          <div class="text-xs text-gray-500 mb-1">Done</div>
-          <div id="stat-done" class="text-2xl font-bold">0</div>
-        </div>
-      </div>
-      <div id="table-wrap" class="bg-white border rounded-xl overflow-auto"></div>
-    </section>
-  </main>
-</div>
-
-<!-- Command bar -->
-<div class="fixed left-0 right-0 bottom-0 px-6 pb-5 pointer-events-none">
-  <div class="max-w-4xl mx-auto bg-white border rounded-2xl shadow-xl p-3 flex gap-2 pointer-events-auto">
-    <input id="command-input" class="flex-1 px-3 py-2 text-sm border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-      placeholder='Type a command… e.g. "add task Review deck by Friday"'
-      onkeypress="if(event.key==='Enter')runPrompt()">
-    <button onclick="runPrompt()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Run</button>
+  <div id="sidebar-footer">
+    <button class="sidebar-footer-btn" onclick="openCloudModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+      Cloud settings
+    </button>
   </div>
 </div>
 
-<!-- Modals root -->
-<div id="app-modal-root"></div>
+<!-- Main -->
+<div id="main">
+  <div id="topbar">
+    <div id="topbar-left">
+      <span id="page-title">General</span>
+      <div class="overdue-warning" id="overdue-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="overdue-count">0 overdue</span>
+      </div>
+    </div>
+    <div id="topbar-right">
+      <button class="btn btn-ghost btn-sm" onclick="openCloudModal()">Sync</button>
+      <button class="btn btn-primary btn-sm" onclick="addTaskRow()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New task
+      </button>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-card-label">Total tasks</div>
+        <div class="stat-card-val" id="stat-total">0</div>
+        <div class="stat-card-sub" id="stat-sub">across all statuses</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">In progress</div>
+        <div class="stat-card-val" id="stat-progress">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Completed</div>
+        <div class="stat-card-val" id="stat-done">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-label">Overdue</div>
+        <div class="stat-card-val" id="stat-overdue" style="color:var(--red)">0</div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div id="table-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Command bar -->
+<div id="cmd-bar">
+  <div class="cmd-inner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--text-3);flex-shrink:0;align-self:center"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+    <input id="cmd-input" placeholder='Try "add task Review deck by Friday" or paste a bullet list…' onkeypress="if(event.key==='Enter')runPrompt()">
+    <button class="cmd-run" onclick="runPrompt()">Run</button>
+  </div>
+</div>
+
+<div id="modal-root"></div>
 
 <script>
-// ── Config ──────────────────────────────────────────────
-const SUPABASE_URL     = 'https://ocdrqmaalkuxplbpfnio.supabase.co';
-const SUPABASE_ANON    = 'sb_publishable_Jnp-8tDyi3S_zXxf8ROUOg_-ot7rkdN';
-const STORAGE_KEY      = 'signal_v1';
+const SUPABASE_URL  = 'https://ocdrqmaalkuxplbpfnio.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_Jnp-8tDyi3S_zXxf8ROUOg_-ot7rkdN';
+const STORAGE_KEY   = 'signal_v2';
 
-// ── State ────────────────────────────────────────────────
 let sb = null;
-let projects         = [{ id:'proj-1', name:'General' }];
+let projects = [{id:'proj-1',name:'General'}];
 let currentProjectId = 'proj-1';
 let columns = [
-  { id:'task',     label:'Task',     type:'text',   required:true,  width:'260px' },
-  { id:'status',   label:'Status',   type:'select', required:true,  options:['todo','progress','waiting','done'], width:'150px' },
-  { id:'priority', label:'Priority', type:'select', required:true,  options:['low','medium','high'], width:'140px' },
-  { id:'assignee', label:'Assignee', type:'text',   required:false, width:'170px' },
-  { id:'dueDate',  label:'Due Date', type:'date',   required:false, width:'170px' },
+  {id:'task',    label:'Task',     type:'text',   required:true,  width:'280px'},
+  {id:'status',  label:'Status',   type:'select', required:true,  options:['todo','progress','waiting','done'], width:'130px'},
+  {id:'priority',label:'Priority', type:'select', required:true,  options:['low','medium','high'], width:'120px'},
+  {id:'assignee',label:'Assignee', type:'text',   required:false, width:'160px'},
+  {id:'dueDate', label:'Due date', type:'date',   required:false, width:'150px'},
 ];
-let tasksByProject  = { 'proj-1': [] };
-let filters         = {};
-let expandedTasks   = {};
-let menuOpenFor     = null;
-let cloud           = { enabled:false, url: SUPABASE_URL, anonKey: SUPABASE_ANON };
+let tasksByProject = {'proj-1':[]};
+let filters = {};
+let expandedTasks = {};
+let menuOpenFor = null;
+let sortCol = null, sortDir = 'asc';
+let dragSrcId = null;
+let cloud = {enabled:false, url:SUPABASE_URL, anonKey:SUPABASE_ANON};
 
-// ── Helpers ───────────────────────────────────────────────
-const esc  = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
-const getTasks = () => (tasksByProject[currentProjectId] ||= []);
-const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects, currentProjectId, columns, tasksByProject, filters, cloud }));
+const esc = s => {const d=document.createElement('div');d.textContent=s;return d.innerHTML;};
+const getTasks = () => (tasksByProject[currentProjectId]||=[]);
+const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({projects,currentProjectId,columns,tasksByProject,filters,cloud}));
+const todayStr = () => new Date().toISOString().split('T')[0];
+const isOverdue = (d,s) => d && s!=='done' && d < todayStr();
 
-function toast(msg, ok=true) {
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = (ok ? '✅ ' : '⚠️ ') + msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
+function toast(msg,ok=true) {
+  const el=document.createElement('div'); el.className='toast';
+  el.textContent=(ok?'✓ ':'⚠ ')+msg; document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},2200);
 }
 
-function normalizeTask(task={}) {
-  const t = { id: task.id || Date.now(), subtasks: task.subtasks || [] };
-  columns.forEach(c => t[c.id] = task[c.id] ?? (c.id==='status'?'todo': c.id==='priority'?'medium':''));
-  return t;
+function normalizeTask(t={}) {
+  const r={id:t.id||Date.now(),subtasks:t.subtasks||[]};
+  columns.forEach(c=>r[c.id]=t[c.id]??(c.id==='status'?'todo':c.id==='priority'?'medium':''));
+  return r;
 }
 
-// ── Supabase ──────────────────────────────────────────────
-function initSupabase() {
-  if (!cloud.url || !cloud.anonKey ||
-      cloud.url === 'PASTE_YOUR_SUPABASE_URL_HERE' ||
-      cloud.anonKey === 'PASTE_YOUR_ANON_KEY_HERE') return;
-  try {
-    sb = window.supabase.createClient(cloud.url, cloud.anonKey);
-    cloud.enabled = true;
-    setCloudStatus('connected');
-    syncFromCloud();
-  } catch(e) {
-    setCloudStatus('error');
-  }
-}
-
+// ── Cloud ─────────────────────────────────────────────────
 function setCloudStatus(s) {
-  const el = document.getElementById('cloud-status');
-  if (s==='connected') { el.textContent='🟢 Cloud connected'; el.className='text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 text-center'; }
-  else if (s==='syncing') { el.textContent='🔄 Syncing…'; el.className='text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-center'; }
-  else if (s==='error')  { el.textContent='🔴 Cloud error'; el.className='text-xs px-2 py-1 rounded-full bg-red-50 text-red-700 text-center'; }
-  else { el.textContent='⚪ Not connected'; el.className='text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-center'; }
+  const dot=document.getElementById('cloud-dot');
+  const txt=document.getElementById('cloud-text');
+  dot.className='cloud-dot';
+  if(s==='connected'){dot.classList.add('green');txt.textContent='Cloud connected';}
+  else if(s==='syncing'){dot.classList.add('blue');txt.textContent='Syncing…';}
+  else if(s==='error'){dot.classList.add('red');txt.textContent='Cloud error';}
+  else {txt.textContent='Not connected';}
 }
-
+function initSupabase() {
+  if(!cloud.url||!cloud.anonKey||cloud.url.includes('PASTE')) return;
+  try { sb=window.supabase.createClient(cloud.url,cloud.anonKey); cloud.enabled=true; setCloudStatus('connected'); syncFromCloud(); }
+  catch(e){setCloudStatus('error');}
+}
 async function syncFromCloud() {
-  if (!sb) return;
-  setCloudStatus('syncing');
+  if(!sb)return; setCloudStatus('syncing');
   try {
-    const { data: pData } = await sb.from('projects').select('*').order('created_at');
-    if (pData?.length) {
-      projects = pData.map(p => ({ id: p.id, name: p.name }));
-      pData.forEach(p => { if (!tasksByProject[p.id]) tasksByProject[p.id] = []; });
-    }
-    const { data: tData } = await sb.from('tasks').select('*').order('created_at', { ascending: false });
-    if (tData) {
-      Object.keys(tasksByProject).forEach(pid => tasksByProject[pid] = []);
-      tData.forEach(row => {
-        const pid = row.project_id || 'proj-1';
-        if (!tasksByProject[pid]) tasksByProject[pid] = [];
-        tasksByProject[pid].push(normalizeTask({
-          id:       row.id,
-          task:     row.task,
-          status:   row.status,
-          priority: row.priority,
-          assignee: row.assignee,
-          dueDate:  row.due_date,
-          subtasks: row.subtasks || [],
-        }));
+    const {data:pData}=await sb.from('projects').select('*').order('created_at');
+    if(pData?.length){projects=pData.map(p=>({id:p.id,name:p.name}));pData.forEach(p=>{if(!tasksByProject[p.id])tasksByProject[p.id]=[];});}
+    const {data:tData}=await sb.from('tasks').select('*').order('created_at',{ascending:false});
+    if(tData){
+      Object.keys(tasksByProject).forEach(pid=>tasksByProject[pid]=[]);
+      tData.forEach(row=>{
+        const pid=row.project_id||'proj-1';
+        if(!tasksByProject[pid])tasksByProject[pid]=[];
+        tasksByProject[pid].push(normalizeTask({id:row.id,task:row.task,status:row.status,priority:row.priority,assignee:row.assignee,dueDate:row.due_date,subtasks:row.subtasks||[]}));
       });
     }
-    setCloudStatus('connected');
-    save();
-    renderProjectList();
-    renderTable();
-    updateStats();
-  } catch(e) {
-    setCloudStatus('error');
-    toast('Sync failed: ' + e.message, false);
-  }
+    setCloudStatus('connected'); save(); renderAll();
+  } catch(e){setCloudStatus('error');toast('Sync failed',false);}
+}
+async function cloudUpsertTask(t) {
+  if(!sb)return;
+  await sb.from('tasks').upsert({id:t.id,project_id:currentProjectId,task:t.task,status:t.status,priority:t.priority,assignee:t.assignee||'',due_date:t.dueDate||'',subtasks:t.subtasks||[]});
+}
+async function cloudDeleteTask(id){if(sb)await sb.from('tasks').delete().eq('id',id);}
+async function cloudUpsertProject(p){if(sb)await sb.from('projects').upsert({id:p.id,name:p.name});}
+
+// ── Render ─────────────────────────────────────────────────
+function renderAll(){renderProjects();renderTable();updateStats();}
+
+function renderProjects() {
+  document.getElementById('project-list').innerHTML = projects.map(p=>`
+    <button class="nav-proj-btn ${p.id===currentProjectId?'active':''}" onclick="switchProject('${p.id}')">
+      <span class="nav-proj-dot"></span>${esc(p.name)}
+    </button>`).join('');
+  document.getElementById('page-title').textContent = projects.find(p=>p.id===currentProjectId)?.name||'Tasks';
 }
 
-async function cloudUpsertTask(task) {
-  if (!sb) return;
-  await sb.from('tasks').upsert({
-    id:         task.id,
-    project_id: currentProjectId,
-    task:       task.task,
-    status:     task.status,
-    priority:   task.priority,
-    assignee:   task.assignee || '',
-    due_date:   task.dueDate  || '',
-    subtasks:   task.subtasks || [],
+function switchProject(id){currentProjectId=id;sortCol=null;renderAll();save();}
+
+function updateStats() {
+  const t=getTasks();
+  const od=t.filter(x=>isOverdue(x.dueDate,x.status)).length;
+  document.getElementById('stat-total').textContent=t.length;
+  document.getElementById('stat-progress').textContent=t.filter(x=>x.status==='progress').length;
+  document.getElementById('stat-done').textContent=t.filter(x=>x.status==='done').length;
+  document.getElementById('stat-overdue').textContent=od;
+  const badge=document.getElementById('overdue-badge');
+  if(od>0){badge.classList.add('show');document.getElementById('overdue-count').textContent=od+' overdue';}
+  else badge.classList.remove('show');
+}
+
+// ── Sorting ────────────────────────────────────────────────
+function toggleSort(id) {
+  sortCol===id ? sortDir=(sortDir==='asc'?'desc':'asc') : (sortCol=id,sortDir='asc');
+  renderTable();
+}
+function getSorted(tasks) {
+  if(!sortCol)return tasks;
+  const pOrd={high:0,medium:1,low:2};
+  return [...tasks].sort((a,b)=>{
+    let av=String(a[sortCol]||'').toLowerCase(), bv=String(b[sortCol]||'').toLowerCase();
+    if(sortCol==='dueDate'){av=av||'9999';bv=bv||'9999';}
+    if(sortCol==='priority'){av=pOrd[av]??9;bv=pOrd[bv]??9;}
+    return av<bv?(sortDir==='asc'?-1:1):av>bv?(sortDir==='asc'?1:-1):0;
   });
 }
 
-async function cloudDeleteTask(id) {
-  if (!sb) return;
-  await sb.from('tasks').delete().eq('id', id);
+// ── Table ─────────────────────────────────────────────────
+function applyFilters(tasks){
+  return tasks.filter(t=>Object.entries(filters).every(([k,v])=>!v?.length||v.includes(String(t[k]||''))));
 }
 
-async function cloudUpsertProject(proj) {
-  if (!sb) return;
-  await sb.from('projects').upsert({ id: proj.id, name: proj.name });
+function statusClass(v){return{todo:'s-todo',progress:'s-progress',waiting:'s-waiting',done:'s-done'}[v]||'s-todo';}
+function priorityClass(v){return{high:'p-high',medium:'p-medium',low:'p-low'}[v]||'p-medium';}
+
+function renderBadgeSelect(taskId, colId, val, classMap, options) {
+  const cls = classMap(val);
+  const opts = options.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('');
+  const extra = colId==='status' ? `;if(this.value==='done')confetti(this)` : '';
+  return `<span class="badge ${cls}"><span class="badge-dot"></span><select onchange="updateCell(${taskId},'${colId}',this.value)${extra}">${opts}</select></span>`;
 }
 
-// ── Projects ──────────────────────────────────────────────
-function renderProjectList() {
-  document.getElementById('project-list').innerHTML = projects.map(p => `
-    <button onclick="switchProject('${p.id}')"
-      class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${p.id===currentProjectId?'bg-indigo-50 text-indigo-700 font-medium':'text-gray-600 hover:bg-gray-50'}">
-      ${esc(p.name)}
-    </button>`).join('');
-  document.getElementById('project-title').textContent =
-    projects.find(p=>p.id===currentProjectId)?.name || 'Tasks';
+function renderCell(t,c) {
+  const v=t[c.id]??'';
+  if(c.id==='task') return `
+    <div style="display:flex;align-items:center;gap:4px;padding:8px 12px">
+      <button class="expand-btn" onclick="toggleExpand(${t.id})">${expandedTasks[t.id]?'▾':'▸'}</button>
+      <input class="cell-in cell-task" value="${esc(v)}" onchange="updateCell(${t.id},'task',this.value)">
+    </div>`;
+  if(c.id==='status') return `<div class="td-inner">${renderBadgeSelect(t.id,'status',v,statusClass,c.options)}</div>`;
+  if(c.id==='priority') return `<div class="td-inner">${renderBadgeSelect(t.id,'priority',v,priorityClass,c.options)}</div>`;
+  if(c.type==='select') {
+    const opts=c.options.map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('');
+    return `<div class="td-inner"><select class="cell-in" style="font-size:12px" onchange="updateCell(${t.id},'${c.id}',this.value)">${opts}</select></div>`;
+  }
+  if(c.type==='date') {
+    const od=isOverdue(v,t.status);
+    return `<div class="td-inner"><input type="date" class="cell-in ${od?'overdue-date':''}" value="${esc(v)}" onchange="updateCell(${t.id},'${c.id}',this.value)"></div>`;
+  }
+  return `<div class="td-inner"><input class="cell-in" value="${esc(v)}" onchange="updateCell(${t.id},'${c.id}',this.value)"></div>`;
 }
 
-function switchProject(id) {
-  currentProjectId = id;
-  renderProjectList();
-  renderTable();
-  updateStats();
-  save();
+function renderSubtasks(t) {
+  const n=columns.length+3;
+  return `<tr>
+    <td colspan="${n}" class="subtask-td">
+      ${(t.subtasks||[]).map(s=>`
+        <div class="subtask-item">
+          <input type="checkbox" class="subtask-cb" ${s.done?'checked':''} onchange="toggleSubtask(${t.id},${s.id})">
+          <input class="subtask-input ${s.done?'line-through text-gray-400':''}" style="${s.done?'opacity:.5':''}" value="${esc(s.title)}" onchange="editSubtask(${t.id},${s.id},this.value)">
+          <button class="subtask-del" onclick="deleteSubtask(${t.id},${s.id})">✕</button>
+        </div>`).join('')}
+      <button class="subtask-add-btn" onclick="addSubtask(${t.id})">+ Add subtask</button>
+    </td>
+  </tr>`;
 }
+
+function renderRow(t,i,arr) {
+  const od=isOverdue(t.dueDate,t.status);
+  const cells=columns.map(c=>`<td>${renderCell(t,c)}</td>`).join('');
+  const menu = menuOpenFor===t.id ? `
+    <div class="action-menu">
+      <button class="action-menu-item" onclick="moveRow(${t.id},-1)" ${i===0?'disabled':''}>↑ Move up</button>
+      <button class="action-menu-item" onclick="moveRow(${t.id},1)" ${i===arr.length-1?'disabled':''}>↓ Move down</button>
+      <div class="action-menu-sep"></div>
+      <button class="action-menu-item" onclick="duplicateTask(${t.id})">Duplicate</button>
+      <button class="action-menu-item" onclick="addSubtask(${t.id})">Add subtask</button>
+      <div class="action-menu-sep"></div>
+      <button class="action-menu-item danger" onclick="deleteTask(${t.id})">Delete</button>
+    </div>` : '';
+  return `
+    <tr class="${od?'overdue-row':''}" draggable="true"
+      ondragstart="dragStart(event,${t.id})" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dragDrop(event,${t.id})">
+      <td class="row-num" style="text-align:center;width:36px;padding:8px 4px">
+        <span class="drag-icon">⠿</span>
+        <span style="font-size:10px;color:var(--text-3);display:block">${i+1}</span>
+      </td>
+      ${cells}
+      <td style="padding:8px 10px;width:40px">
+        <div class="action-menu-wrap">
+          <button class="action-btn" onclick="toggleMenu(${t.id},event)">···</button>
+          ${menu}
+        </div>
+      </td>
+    </tr>
+    ${expandedTasks[t.id]?renderSubtasks(t):''}`;
+}
+
+function renderTable() {
+  let tasks=getSorted(applyFilters(getTasks()));
+  const ths=columns.map(c=>{
+    const isS=sortCol===c.id;
+    const arrow=isS?(sortDir==='asc'?'↑':'↓'):'↕';
+    const hf=Boolean(filters[c.id]?.length);
+    return `<th style="min-width:${c.width}">
+      <div class="th-inner">
+        <span class="th-sort" onclick="toggleSort('${c.id}')">${esc(c.label)}</span>
+        <span class="sort-icon ${isS?'active':''}" onclick="toggleSort('${c.id}')">${arrow}</span>
+        <span class="th-edit" onclick="openColEditor('${c.id}')">✎</span>
+        <span class="th-filter ${hf?'active':''}" onclick="toggleFilterMenu('${c.id}',event)">▾</span>
+      </div>
+    </th>`;
+  }).join('');
+  const rows=tasks.length
+    ? tasks.map((t,i,a)=>renderRow(t,i,a)).join('')
+    : `<tr><td colspan="${columns.length+3}" style="padding:48px;text-align:center;color:var(--text-3);font-size:13px">No tasks yet — click New task or type a command below.</td></tr>`;
+  document.getElementById('table-wrap').innerHTML=`
+    <table>
+      <thead><tr>
+        <th style="width:36px"></th>
+        ${ths}
+        <th><button class="add-col-btn" onclick="openColCreator()" title="Add column">+</button></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Drag ──────────────────────────────────────────────────
+function dragStart(e,id){dragSrcId=id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function dragDrop(e,targetId){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  if(dragSrcId===targetId)return;
+  const arr=getTasks();
+  const si=arr.findIndex(t=>t.id===dragSrcId), ti=arr.findIndex(t=>t.id===targetId);
+  if(si<0||ti<0)return;
+  const [m]=arr.splice(si,1);arr.splice(ti,0,m);
+  dragSrcId=null;renderTable();save();arr.forEach(t=>cloudUpsertTask(t));
+}
+function moveRow(id,dir){
+  menuOpenFor=null;const arr=getTasks();const i=arr.findIndex(t=>t.id===id);const ni=i+dir;
+  if(ni<0||ni>=arr.length)return;[arr[i],arr[ni]]=[arr[ni],arr[i]];renderTable();save();
+}
+
+// ── CRUD ──────────────────────────────────────────────────
+async function addTaskRow(title=''){
+  const t=normalizeTask({task:title||'New task'});getTasks().unshift(t);
+  renderTable();updateStats();save();await cloudUpsertTask(t);if(title)toast('Task added');
+}
+async function updateCell(id,key,val){
+  const t=getTasks().find(x=>x.id===id);if(!t)return;
+  t[key]=val;updateStats();save();await cloudUpsertTask(t);
+}
+async function deleteTask(id){
+  menuOpenFor=null;
+  const t=getTasks().find(x=>x.id===id);
+  confirmDelete(`Delete "${t?.task||'this task'}"? This cannot be undone.`,async()=>{
+    tasksByProject[currentProjectId]=getTasks().filter(x=>x.id!==id);
+    renderTable();updateStats();save();await cloudDeleteTask(id);toast('Task deleted');
+  });
+}
+function duplicateTask(id){
+  const t=getTasks().find(x=>x.id===id);const c=normalizeTask({...t,id:Date.now()});
+  getTasks().unshift(c);menuOpenFor=null;renderTable();updateStats();save();cloudUpsertTask(c);toast('Duplicated');
+}
+async function addSubtask(tid){
+  const t=getTasks().find(x=>x.id===tid);t.subtasks=t.subtasks||[];
+  t.subtasks.push({id:Date.now(),title:'New subtask',done:false});
+  expandedTasks[tid]=true;menuOpenFor=null;renderTable();save();await cloudUpsertTask(t);
+}
+async function toggleSubtask(tid,sid){
+  const t=getTasks().find(x=>x.id===tid);const s=t.subtasks.find(x=>x.id===sid);
+  if(s){s.done=!s.done;renderTable();save();await cloudUpsertTask(t);}
+}
+async function editSubtask(tid,sid,val){
+  const t=getTasks().find(x=>x.id===tid);const s=t.subtasks.find(x=>x.id===sid);
+  if(s){s.title=val;save();await cloudUpsertTask(t);}
+}
+async function deleteSubtask(tid,sid){
+  const t=getTasks().find(x=>x.id===tid);t.subtasks=t.subtasks.filter(x=>x.id!==sid);
+  renderTable();save();await cloudUpsertTask(t);
+}
+function toggleExpand(id){expandedTasks[id]=!expandedTasks[id];renderTable();}
+function toggleMenu(id,e){e.stopPropagation();menuOpenFor=menuOpenFor===id?null:id;renderTable();}
+
+// ── Columns ───────────────────────────────────────────────
+function openColCreator(){
+  const id='col_'+Date.now();
+  columns.push({id,label:'New column',type:'text',required:false,width:'170px'});
+  Object.keys(tasksByProject).forEach(pid=>tasksByProject[pid]=tasksByProject[pid].map(normalizeTask));
+  renderTable();save();openColEditor(id);
+}
+function openColEditor(id){
+  const c=columns.find(x=>x.id===id);if(!c)return;
+  openModal({title:'Edit column',showDelete:!c.required,
+    body:`<div><label class="field-label">Column name</label><input id="col-n" class="field-input" value="${esc(c.label)}"></div>
+      <div><label class="field-label">Type</label><select id="col-t" class="field-input">${['text','number','date','select'].map(t=>`<option ${c.type===t?'selected':''} value="${t}">${t}</option>`).join('')}</select></div>
+      <div><label class="field-label">Select options <span style="color:var(--text-3);font-weight:400">(comma separated)</span></label><input id="col-o" class="field-input" value="${esc((c.options||[]).join(', '))}"></div>`,
+    onSave:()=>{
+      c.label=document.getElementById('col-n').value.trim()||c.label;
+      c.type=document.getElementById('col-t').value;
+      c.options=document.getElementById('col-o').value.split(',').map(v=>v.trim()).filter(Boolean);
+      if(c.type!=='select')c.options=[];renderTable();save();closeModal();
+    },
+    onDelete:()=>{
+      columns=columns.filter(x=>x.id!==id);
+      Object.keys(tasksByProject).forEach(pid=>tasksByProject[pid].forEach(t=>delete t[id]));
+      renderTable();save();closeModal();
+    }
+  });
+}
+
+// ── Filter ────────────────────────────────────────────────
+function toggleFilterMenu(id,e){
+  e.stopPropagation();
+  const ex=document.getElementById('fm-'+id);if(ex){ex.remove();return;}
+  document.querySelectorAll('[id^="fm-"]').forEach(m=>m.remove());
+  const vals=[...new Set(getTasks().map(t=>String(t[id]||'')))];
+  const active=filters[id]||[];
+  const m=document.createElement('div');m.id='fm-'+id;m.className='filter-menu';
+  m.innerHTML=vals.map(v=>`<label class="filter-label"><input type="checkbox" ${active.includes(v)?'checked':''} onchange="toggleFV('${id}','${String(v).replace(/'/g,"\\'")}')"><span>${esc(v||'(empty)')}</span></label>`).join('')
+    +`<button class="filter-clear" onclick="clearFilter('${id}')">Clear filter</button>`;
+  const th=e.currentTarget.closest('th');th.style.position='relative';th.appendChild(m);
+}
+function toggleFV(id,v){filters[id]=filters[id]||[];filters[id]=filters[id].includes(v)?filters[id].filter(x=>x!==v):[...filters[id],v];renderTable();save();}
+function clearFilter(id){delete filters[id];renderTable();save();}
 
 // ── Modals ────────────────────────────────────────────────
-function openModal({title, body, onSave, onDelete, showDelete=false, saveLabel='Save'}) {
-  window._onSave = onSave; window._onDelete = onDelete;
-  document.getElementById('app-modal-root').innerHTML = `
-    <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
-      <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl border fade-in">
-        <div class="px-6 py-4 border-b flex justify-between items-center">
-          <h3 class="text-lg font-semibold">${esc(title)}</h3>
-          <button onclick="closeModal()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
-        </div>
-        <div class="p-6 space-y-3">${body}</div>
-        <div class="px-6 py-4 border-t flex justify-between">
-          <div>${showDelete?'<button onclick="_onDelete&&_onDelete()" class="text-red-500 text-sm hover:text-red-700">Delete</button>':''}</div>
-          <div class="flex gap-2">
-            <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-            <button onclick="_onSave&&_onSave()" class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">${esc(saveLabel)}</button>
+function openModal({title,body,onSave,onDelete,showDelete=false,saveLabel='Save'}){
+  window._ms=onSave;window._md=onDelete;
+  document.getElementById('modal-root').innerHTML=`
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-head"><span class="modal-title">${esc(title)}</span><button class="modal-close" onclick="closeModal()">×</button></div>
+        <div class="modal-body">${body}</div>
+        <div class="modal-foot">
+          <div>${showDelete?`<button class="btn btn-danger btn-sm" onclick="_md&&_md()">Delete</button>`:''}</div>
+          <div class="modal-foot-right">
+            <button class="btn btn-cancel btn-sm" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="_ms&&_ms()">${esc(saveLabel)}</button>
           </div>
         </div>
       </div>
     </div>`;
 }
-function closeModal() { document.getElementById('app-modal-root').innerHTML = ''; }
+function closeModal(){document.getElementById('modal-root').innerHTML='';}
+function confirmDelete(msg,cb){openModal({title:'Confirm delete',body:`<p style="color:var(--text-2);font-size:13px;line-height:1.6">${esc(msg)}</p>`,saveLabel:'Delete',onSave:()=>{closeModal();cb();}});}
 
-function openProjectModal() {
-  openModal({ title:'New Project', saveLabel:'Create',
-    body:`<label class="text-sm text-gray-600">Project name</label>
-          <input id="new-proj-name" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Marketing Q3">`,
-    onSave: async () => {
-      const name = document.getElementById('new-proj-name').value.trim();
-      if (!name) return;
-      const proj = { id: 'proj-' + Date.now(), name };
-      projects.push(proj);
-      tasksByProject[proj.id] = [];
-      await cloudUpsertProject(proj);
-      currentProjectId = proj.id;
-      renderProjectList(); renderTable(); updateStats(); save(); closeModal();
+function openProjectModal(){
+  openModal({title:'New project',saveLabel:'Create',
+    body:`<div><label class="field-label">Project name</label><input id="pn" class="field-input" placeholder="e.g. Q3 Marketing"></div>`,
+    onSave:async()=>{
+      const name=document.getElementById('pn').value.trim();if(!name)return;
+      const p={id:'proj-'+Date.now(),name};projects.push(p);tasksByProject[p.id]=[];
+      await cloudUpsertProject(p);currentProjectId=p.id;renderAll();save();closeModal();
     }
   });
 }
-
-function openCloudModal() {
-  openModal({ title:'Cloud Settings (Supabase)', saveLabel:'Save & Connect',
-    body:`
-      <p class="text-sm text-gray-500">Enter your Supabase project URL and anon key.</p>
-      <label class="text-sm text-gray-600">Project URL</label>
-      <input id="c-url" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm font-mono" value="${esc(cloud.url||'')}">
-      <label class="text-sm text-gray-600 mt-2 block">Anon / Publishable key</label>
-      <input id="c-key" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm font-mono" value="${esc(cloud.anonKey||'')}">`,
-    onSave: () => {
-      cloud.url     = document.getElementById('c-url').value.trim();
-      cloud.anonKey = document.getElementById('c-key').value.trim();
-      save(); closeModal(); initSupabase();
-    }
+function openCloudModal(){
+  openModal({title:'Cloud settings',saveLabel:'Save & connect',
+    body:`<p style="font-size:12px;color:var(--text-3)">Connect to Supabase for real-time cloud sync across devices.</p>
+      <div><label class="field-label">Supabase URL</label><input id="cu" class="field-input" style="font-family:monospace;font-size:12px" value="${esc(cloud.url||'')}"></div>
+      <div><label class="field-label">Anon / publishable key</label><input id="ck" class="field-input" style="font-family:monospace;font-size:12px" value="${esc(cloud.anonKey||'')}"></div>`,
+    onSave:()=>{cloud.url=document.getElementById('cu').value.trim();cloud.anonKey=document.getElementById('ck').value.trim();save();closeModal();initSupabase();}
   });
-}
-
-// ── Table ─────────────────────────────────────────────────
-function applyFilters(tasks) {
-  return tasks.filter(t =>
-    Object.entries(filters).every(([k,vals]) => !vals?.length || vals.includes(String(t[k]||''))));
-}
-
-function renderHeaderCell(c) {
-  const hf = Boolean(filters[c.id]?.length);
-  return `<th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide" style="min-width:${c.width}">
-    <div class="flex items-center gap-1">
-      <span>${esc(c.label)}</span>
-      <button class="header-edit-icon p-0.5 hover:text-indigo-600" onclick="openColEditor('${c.id}')">✎</button>
-      <button class="p-0.5 ${hf?'text-indigo-600':'text-gray-300'} hover:text-indigo-600" onclick="toggleFilterMenu('${c.id}',event)">▼</button>
-    </div>
-  </th>`;
-}
-
-function renderCell(task, c) {
-  const v = task[c.id] ?? '';
-  if (c.id==='task') return `
-    <div class="flex items-center gap-1">
-      <button onclick="toggleExpand(${task.id})" class="text-gray-400 hover:text-gray-600 w-4">${expandedTasks[task.id]?'▾':'▸'}</button>
-      <input class="cell-input font-medium" value="${esc(v)}" onchange="updateCell(${task.id},'task',this.value)">
-    </div>`;
-  if (c.type==='select') {
-    const opts = (c.options||[]).map(o=>`<option ${String(o)===String(v)?'selected':''}>${esc(String(o))}</option>`).join('');
-    const colorMap = {
-      todo:'bg-gray-100 text-gray-700', progress:'bg-blue-100 text-blue-700',
-      waiting:'bg-yellow-100 text-yellow-700', done:'bg-green-100 text-green-700',
-      high:'bg-red-100 text-red-700', medium:'bg-yellow-100 text-yellow-700', low:'bg-green-100 text-green-700'
-    };
-    return `<select class="cell-input text-xs font-medium rounded-full px-2 ${colorMap[v]||''}"
-      onchange="updateCell(${task.id},'${c.id}',this.value)${c.id==='status'?';if(this.value=\'done\')confetti(this)':''}">${opts}</select>`;
-  }
-  if (c.type==='date') return `<input type="date" class="cell-input text-sm" value="${esc(v)}" onchange="updateCell(${task.id},'${c.id}',this.value)">`;
-  return `<input class="cell-input text-sm" value="${esc(v)}" onchange="updateCell(${task.id},'${c.id}',this.value)">`;
-}
-
-function renderSubtaskRows(task) {
-  const n = columns.length + 2;
-  return `<tr class="bg-gray-50">
-    <td colspan="${n}" class="px-8 py-3">
-      <div class="space-y-1 mb-2">
-        ${(task.subtasks||[]).map(s=>`
-          <div class="flex items-center gap-2">
-            <input type="checkbox" ${s.done?'checked':''} onchange="toggleSubtask(${task.id},${s.id})" class="rounded">
-            <input class="cell-input text-sm flex-1 ${s.done?'line-through text-gray-400':''}" value="${esc(s.title)}" onchange="editSubtask(${task.id},${s.id},this.value)">
-            <button onclick="deleteSubtask(${task.id},${s.id})" class="text-gray-300 hover:text-red-500 text-xs">✕</button>
-          </div>`).join('')}
-      </div>
-      <button onclick="addSubtask(${task.id})" class="text-xs text-indigo-600 hover:text-indigo-800">+ Add subtask</button>
-    </td>
-  </tr>`;
-}
-
-function renderTaskRow(t) {
-  const cells = columns.map(c=>`<td class="px-2 py-2 border-b border-gray-50">${renderCell(t,c)}</td>`).join('');
-  const menu  = menuOpenFor===t.id ? `
-    <div class="absolute right-0 mt-1 bg-white border rounded-lg shadow-lg z-20 py-1 w-36">
-      <button class="block w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50" onclick="duplicateTask(${t.id})">Duplicate</button>
-      <button class="block w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50" onclick="addSubtask(${t.id})">Add subtask</button>
-      <button class="block w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50" onclick="deleteTask(${t.id})">Delete</button>
-    </div>` : '';
-  return `
-    <tr class="hover:bg-gray-50 transition-colors">
-      ${cells}
-      <td class="px-2 py-2 border-b border-gray-50">
-        <div class="relative">
-          <button onclick="toggleMenu(${t.id},event)" class="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-700">⋯</button>
-          ${menu}
-        </div>
-      </td>
-      <td class="border-b border-gray-50"></td>
-    </tr>
-    ${expandedTasks[t.id] ? renderSubtaskRows(t) : ''}`;
-}
-
-function renderTable() {
-  const tasks = applyFilters(getTasks());
-  const h = columns.map(renderHeaderCell).join('');
-  const r = tasks.length
-    ? tasks.map(renderTaskRow).join('')
-    : `<tr><td colspan="${columns.length+2}" class="px-4 py-12 text-center text-gray-400">No tasks yet — add one above or type a command below.</td></tr>`;
-  document.getElementById('table-wrap').innerHTML = `
-    <table class="min-w-max w-full text-sm border-collapse">
-      <thead class="sticky top-0 bg-gray-50 border-b">
-        <tr>${h}
-          <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Actions</th>
-          <th class="px-3 py-2"><button onclick="openColCreator()" class="text-indigo-500 hover:text-indigo-700 text-lg leading-none">+</button></th>
-        </tr>
-      </thead>
-      <tbody>${r}</tbody>
-    </table>`;
-}
-
-// ── CRUD ──────────────────────────────────────────────────
-async function addTaskRow(title='') {
-  const task = normalizeTask({ task: title || 'New task' });
-  getTasks().unshift(task);
-  renderTable(); updateStats(); save();
-  await cloudUpsertTask(task);
-  if (title) toast('Task added');
-}
-
-async function updateCell(id, key, val) {
-  const t = getTasks().find(x=>x.id===id);
-  if (!t) return;
-  t[key] = val;
-  updateStats(); save();
-  await cloudUpsertTask(t);
-}
-
-async function deleteTask(id) {
-  tasksByProject[currentProjectId] = getTasks().filter(t=>t.id!==id);
-  menuOpenFor = null;
-  renderTable(); updateStats(); save();
-  await cloudDeleteTask(id);
-  toast('Task deleted');
-}
-
-function duplicateTask(id) {
-  const t = getTasks().find(x=>x.id===id);
-  const copy = normalizeTask({ ...t, id: Date.now() });
-  getTasks().unshift(copy);
-  menuOpenFor = null;
-  renderTable(); updateStats(); save();
-  cloudUpsertTask(copy);
-  toast('Task duplicated');
-}
-
-async function addSubtask(taskId) {
-  const t = getTasks().find(x=>x.id===taskId);
-  t.subtasks = t.subtasks || [];
-  t.subtasks.push({ id: Date.now(), title: 'New subtask', done: false });
-  expandedTasks[taskId] = true;
-  menuOpenFor = null;
-  renderTable(); save();
-  await cloudUpsertTask(t);
-}
-
-async function toggleSubtask(taskId, subId) {
-  const t = getTasks().find(x=>x.id===taskId);
-  const s = t.subtasks.find(x=>x.id===subId);
-  if (s) { s.done = !s.done; renderTable(); save(); await cloudUpsertTask(t); }
-}
-
-async function editSubtask(taskId, subId, val) {
-  const t = getTasks().find(x=>x.id===taskId);
-  const s = t.subtasks.find(x=>x.id===subId);
-  if (s) { s.title = val; save(); await cloudUpsertTask(t); }
-}
-
-async function deleteSubtask(taskId, subId) {
-  const t = getTasks().find(x=>x.id===taskId);
-  t.subtasks = t.subtasks.filter(x=>x.id!==subId);
-  renderTable(); save(); await cloudUpsertTask(t);
-}
-
-function toggleExpand(id) { expandedTasks[id] = !expandedTasks[id]; renderTable(); }
-function toggleMenu(id, e) { e.stopPropagation(); menuOpenFor = menuOpenFor===id?null:id; renderTable(); }
-
-// ── Column editor ─────────────────────────────────────────
-function openColCreator() {
-  const id = 'col_' + Date.now();
-  columns.push({ id, label:'New Column', type:'text', required:false, width:'170px' });
-  Object.keys(tasksByProject).forEach(pid => tasksByProject[pid] = tasksByProject[pid].map(normalizeTask));
-  renderTable(); save(); openColEditor(id);
-}
-
-function openColEditor(id) {
-  const c = columns.find(x=>x.id===id); if (!c) return;
-  openModal({ title:'Edit Column', showDelete:!c.required,
-    body:`
-      <label class="text-sm text-gray-600">Column name</label>
-      <input id="col-name" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" value="${esc(c.label)}">
-      <label class="text-sm text-gray-600 mt-3 block">Type</label>
-      <select id="col-type" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm">
-        ${['text','number','date','select'].map(t=>`<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`).join('')}
-      </select>
-      <label class="text-sm text-gray-600 mt-3 block">Options (for select, comma-separated)</label>
-      <input id="col-opts" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" value="${esc((c.options||[]).join(', '))}" placeholder="Option A, Option B">`,
-    onSave: () => {
-      c.label   = document.getElementById('col-name').value.trim() || c.label;
-      c.type    = document.getElementById('col-type').value;
-      c.options = document.getElementById('col-opts').value.split(',').map(v=>v.trim()).filter(Boolean);
-      if (c.type!=='select') c.options = [];
-      renderTable(); save(); closeModal();
-    },
-    onDelete: () => {
-      columns = columns.filter(x=>x.id!==id);
-      Object.keys(tasksByProject).forEach(pid => tasksByProject[pid].forEach(t=>delete t[id]));
-      renderTable(); save(); closeModal();
-    }
-  });
-}
-
-// ── Filters ───────────────────────────────────────────────
-function toggleFilterMenu(id, e) {
-  e.stopPropagation();
-  const existing = document.getElementById('filter-menu-' + id);
-  if (existing) { existing.remove(); return; }
-  const vals = [...new Set(getTasks().map(t=>String(t[id]||'')))];
-  const active = filters[id] || [];
-  const menu = document.createElement('div');
-  menu.id = 'filter-menu-' + id;
-  menu.className = 'absolute mt-1 bg-white border rounded-lg shadow-lg z-30 p-2 w-44';
-  menu.innerHTML = vals.map(v=>`
-    <label class="flex items-center gap-2 text-xs py-1 hover:text-indigo-600 cursor-pointer">
-      <input type="checkbox" ${active.includes(v)?'checked':''} onchange="toggleFilterVal('${id}','${String(v).replace(/'/g,"\\'")}')">
-      <span>${esc(v||'(empty)')}</span>
-    </label>`).join('') +
-    `<button class="text-xs text-red-500 mt-1 hover:text-red-700" onclick="clearFilter('${id}')">Clear filter</button>`;
-  e.currentTarget.closest('th').style.position = 'relative';
-  e.currentTarget.closest('th').appendChild(menu);
-}
-function toggleFilterVal(id, v) { filters[id]=filters[id]||[]; filters[id]=filters[id].includes(v)?filters[id].filter(x=>x!==v):[...filters[id],v]; renderTable(); save(); }
-function clearFilter(id) { delete filters[id]; renderTable(); save(); }
-
-// ── Stats ─────────────────────────────────────────────────
-function updateStats() {
-  const t = getTasks();
-  document.getElementById('stat-total').textContent    = t.length;
-  document.getElementById('stat-progress').textContent = t.filter(x=>x.status==='progress').length;
-  document.getElementById('stat-done').textContent     = t.filter(x=>x.status==='done').length;
 }
 
 // ── Confetti ──────────────────────────────────────────────
-function confetti(el) {
-  for (let i=0; i<8; i++) {
-    const p = document.createElement('span');
-    p.style.cssText = `position:fixed;pointer-events:none;width:7px;height:7px;border-radius:50%;
-      background:${['#6366f1','#22c55e','#f59e0b','#ef4444'][i%4]};
-      left:${el.getBoundingClientRect().left + Math.random()*40}px;
-      top:${el.getBoundingClientRect().top}px;
-      animation:none;z-index:9999;transition:all .7s ease-out;`;
+function confetti(el){
+  const r=el.getBoundingClientRect();
+  ['#5B4FE8','#10B981','#F59E0B','#EF4444','#3B82F6'].forEach((c,i)=>{
+    const p=document.createElement('span');
+    p.style.cssText=`position:fixed;pointer-events:none;width:6px;height:6px;border-radius:50%;background:${c};left:${r.left+Math.random()*40}px;top:${r.top}px;z-index:999;transition:all .8s cubic-bezier(.25,.46,.45,.94)`;
     document.body.appendChild(p);
-    setTimeout(()=>{ p.style.transform=`translate(${(Math.random()-0.5)*80}px,${-40-Math.random()*60}px)`; p.style.opacity='0'; },10);
-    setTimeout(()=>p.remove(), 800);
-  }
+    setTimeout(()=>{p.style.transform=`translate(${(Math.random()-.5)*100}px,${-50-Math.random()*60}px) rotate(${Math.random()*360}deg)`;p.style.opacity='0';},20);
+    setTimeout(()=>p.remove(),900);
+  });
 }
 
 // ── Command bar ───────────────────────────────────────────
-function extractBullets(msg) {
-  const lines = msg.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-  const bullets = lines.filter(l=>/^[-*]\s+/.test(l)).map(l=>l.replace(/^[-*]\s+/,'').trim());
-  return bullets.length ? bullets : [];
+function extractBullets(msg){
+  const lines=msg.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const b=lines.filter(l=>/^[-*•]\s+/.test(l)).map(l=>l.replace(/^[-*•]\s+/,'').trim());
+  return b.length?b:[];
 }
-function cleanTitle(msg) {
-  return msg.trim()
-    .replace(/^(please\s+)?(create|add|new)\s+(a\s+)?task[:\s-]*/i,'')
-    .replace(/\s+(by|due)\s+\w+$/i,'').trim();
+function cleanTitle(msg){return msg.trim().replace(/^(please\s+)?(create|add|new)\s+(a\s+)?task[:\s-]*/i,'').replace(/\s+(by|due)\s+\S+$/i,'').trim();}
+function findTask(msg){
+  const keys=msg.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['task','done','mark','create','delete','add','new'].includes(w));
+  return getTasks().find(t=>keys.some(k=>String(t.task||'').toLowerCase().includes(k)))||getTasks()[0];
 }
-function findTask(msg) {
-  const keys = msg.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['task','done','mark','create','delete','add','new'].includes(w));
-  return getTasks().find(t=>keys.some(k=>String(t.task||'').toLowerCase().includes(k))) || getTasks()[0];
-}
-
-function runPrompt() {
-  const input = document.getElementById('command-input');
-  const text  = input.value.trim();
-  if (!text) return;
-  input.value = '';
-
-  const bullets = extractBullets(text);
-  if (bullets.length) {
-    bullets.forEach(t => addTaskRow(t));
-    toast(`${bullets.length} tasks added`);
-    return;
-  }
-
-  const lower = text.toLowerCase();
-  if (/create|add|new/i.test(lower) && !/done|complete/i.test(lower)) {
-    addTaskRow(cleanTitle(text));
-  } else if (/done|complete/i.test(lower)) {
-    const t = findTask(text);
-    if (t) { updateCell(t.id,'status','done'); toast('Marked as done 🎉'); }
-  } else if (/delete|remove/i.test(lower)) {
-    const t = findTask(text);
-    if (t) deleteTask(t.id);
-  } else if (/high priority|urgent/i.test(lower)) {
-    const t = findTask(text);
-    if (t) { updateCell(t.id,'priority','high'); toast('Priority set to high'); }
-  } else {
-    addTaskRow(cleanTitle(text));
-  }
-}
-
-// ── Load state ────────────────────────────────────────────
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const s = JSON.parse(raw);
-    projects         = s.projects         || projects;
-    currentProjectId = s.currentProjectId || currentProjectId;
-    columns          = s.columns          || columns;
-    tasksByProject   = s.tasksByProject   || tasksByProject;
-    filters          = s.filters          || {};
-    if (s.cloud) cloud = { ...cloud, ...s.cloud };
-  } catch(_) {}
+function runPrompt(){
+  const inp=document.getElementById('cmd-input');const text=inp.value.trim();if(!text)return;inp.value='';
+  const bullets=extractBullets(text);
+  if(bullets.length){bullets.forEach(t=>addTaskRow(t));toast(bullets.length+' tasks added');return;}
+  const lo=text.toLowerCase();
+  if(/create|add|new/i.test(lo)&&!/done|complete/i.test(lo)) addTaskRow(cleanTitle(text));
+  else if(/done|complete/i.test(lo)){const t=findTask(text);if(t){updateCell(t.id,'status','done');toast('Done! 🎉');}}
+  else if(/delete|remove/i.test(lo)){const t=findTask(text);if(t)deleteTask(t.id);}
+  else if(/high priority|urgent/i.test(lo)){const t=findTask(text);if(t){updateCell(t.id,'priority','high');toast('Priority set to high');}}
+  else addTaskRow(cleanTitle(text));
 }
 
 // ── Boot ──────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadState();
-  renderProjectList();
-  renderTable();
-  updateStats();
-  lucide.createIcons();
-  initSupabase();
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('[onclick*="toggleMenu"]') && !e.target.closest('.relative')) {
-      if (menuOpenFor !== null) { menuOpenFor = null; renderTable(); }
-    }
-    if (!e.target.closest('[onclick*="toggleFilterMenu"]')) {
-      document.querySelectorAll('[id^="filter-menu-"]').forEach(m=>m.remove());
-    }
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;
+    const s=JSON.parse(raw);
+    projects=s.projects||projects;currentProjectId=s.currentProjectId||currentProjectId;
+    columns=s.columns||columns;tasksByProject=s.tasksByProject||tasksByProject;
+    filters=s.filters||{};if(s.cloud)cloud={...cloud,...s.cloud};
+  }catch(_){}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  loadState();renderAll();initSupabase();
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.action-menu-wrap')&&menuOpenFor!==null){menuOpenFor=null;renderTable();}
+    if(!e.target.closest('.th-filter'))document.querySelectorAll('[id^="fm-"]').forEach(m=>m.remove());
   });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();menuOpenFor=null;renderTable();}});
 });
 </script>
 </body>
