@@ -818,4 +818,661 @@ function showListDD(anchorEl, colId, currentVal, taskId, subId){
   const spaceBelow = window.innerHeight-(rect.bottom+4);
   dd.style.top  = Math.max(8,(spaceBelow>est?rect.bottom+4:rect.top-est-4))+'px';
   dd.style.left = Math.min(rect.left,window.innerWidth-240)+'px';
-  document.body.appendChild(dd
+  document.body.appendChild(dd); openDD=dd;
+  setTimeout(()=>document.addEventListener('click',function h(e){if(!dd.contains(e.target)){closeAllDD();document.removeEventListener('click',h)}},true),10);
+}
+
+async function handleSubListSelect(taskId, subId, colId, val){
+  const t=GT().find(x=>x.id===taskId); if(!t)return;
+  const s=t.subtasks.find(x=>x.id===subId); if(!s)return;
+  s[colId]=val; if(colId==='status'&&val==='done') s.done=true;
+  // Update badge in-place without full re-render
+  const uid=`sub-badge-${taskId}-${subId}-${colId}`;
+  const el=document.getElementById(uid);
+  if(el){
+    const col=columns.find(c=>c.id===colId);
+    const{bg,tc}=listStyle(col,val);
+    el.style.background=bg; el.style.color=tc;
+    el.querySelector('.bdot').style.background=tc;
+    el.querySelector('.badge-lbl').textContent=val;
+    el.dataset.val=val;
+  }
+  save(); await cuTask(t);
+}
+
+async function handleListSelect(taskId, colId, val){
+  const t=GT().find(x=>x.id===taskId); if(!t)return;
+  const prev=t[colId]; if(prev===val)return;
+  pushUndo({type:'edit',id:taskId,key:colId,prev,next:val});
+  t[colId]=val; updateStats(); save(); cuTask(t);
+  if(curView==='board'){renderBoard();return}
+  // Update badge in-place
+  const uid=`badge-${taskId}-${colId}`;
+  const col=columns.find(c=>c.id===colId);
+  const{bg,tc}=listStyle(col,val);
+  const el=document.getElementById(uid);
+  if(el){
+    el.style.background=bg; el.style.color=tc;
+    el.querySelector('.bdot').style.background=tc;
+    el.querySelector('.badge-lbl').textContent=val;
+    el.dataset.val=val;
+    el.classList.remove('done-flash');void el.offsetWidth;el.classList.add('done-flash');
+    setTimeout(()=>el.classList.remove('done-flash'),400);
+  }
+  if(colId==='status'){
+    const row=document.querySelector(`tr[data-tid="${taskId}"]`);
+    if(row){row.classList.toggle('od-row',isOD(t.dueDate,val));row.classList.toggle('live-row',myLiveTask===t.task)}
+    if(val==='done'){
+      confetti();if((t.owners||[]).length>0)notifyCompleted(t.task,profile.name);
+      const r=document.querySelector(`tr[data-tid="${taskId}"]`);
+      if(r){r.style.transition='opacity .35s,transform .35s';r.style.opacity='0';r.style.transform='translateX(16px)';setTimeout(()=>renderTable(),360)}
+    }
+  }
+}
+
+// Badge builder — uses data attributes for clean event delegation
+function mkBadge(uid, colId, val, col, taskId, subId=''){
+  const{bg,tc}=listStyle(col,val);
+  return `<button class="sig-badge" id="${uid}"
+    style="background:${bg};color:${tc}"
+    data-col="${colId}" data-val="${esc(val)}"
+    data-taskid="${taskId}" data-subid="${subId}">
+    <span class="bdot" style="background:${tc}"></span>
+    <span class="badge-lbl">${esc(val)}</span>
+  </button>`;
+}
+
+// ─── Date cells ───────────────────────────────────────────
+function renderDateCell(tid,val,status){
+  const od=isOD(val,status),uid=`dp-${tid}`,label=val?fdate(val):'Set date';
+  return`<div style="padding:5px 10px"><button class="date-pill ${val?'has-date':''} ${od?'overdue':''}" id="${uid}" data-tid="${tid}" data-col="dueDate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${od?'⚠ ':''}${esc(label)}</button></div>`;
+}
+function openFP(btnId,tid,currentVal){
+  if(fpInstances[btnId]){try{fpInstances[btnId].destroy()}catch(e){}delete fpInstances[btnId]}
+  const btn=document.getElementById(btnId);if(!btn)return;
+  const fp=flatpickr(btn,{defaultDate:currentVal||null,dateFormat:'Y-m-d',disableMobile:true,
+    onChange:(dates)=>{updCell(tid,'dueDate',dates[0]?dates[0].toISOString().split('T')[0]:'');fp.close()},
+    onReady:(_,__,fp)=>fp.open(),
+    onClose:()=>setTimeout(()=>{try{fp.destroy()}catch(e){}delete fpInstances[btnId]},200)});
+  fpInstances[btnId]=fp;
+}
+
+// ─── Owner cells ──────────────────────────────────────────
+function getTeamSugg(){return[{name:profile.name,photo:profile.photo},...teamMembers.map(m=>({name:m.name,photo:m.photo||null}))]}
+function renderAssigneeCell(owners, taskId, subId=''){
+  const chips=(owners||[]).map(a=>{const m=getTeamSugg().find(x=>x.name===a);
+    return`<span class="chip"><span class="chip-av">${m?.photo?`<img src="${m.photo}" alt="">`:a[0].toUpperCase()}</span>${esc(a)}<button class="chip-del" data-taskid="${taskId}" data-subid="${subId}" data-owner="${esc(a)}">×</button></span>`}).join('');
+  return`<div class="assignee-cell">${chips}<button class="chip-add" data-taskid="${taskId}" data-subid="${subId}">+ Add</button></div>`;
+}
+function openAssignDD(taskId, subId, btn){
+  document.querySelectorAll('.a-dd').forEach(d=>d.remove());
+  let owners;
+  if(subId){const t=GT().find(x=>x.id===taskId);const s=t?.subtasks.find(x=>x.id===subId);owners=s?.owners||[]}
+  else{const t=GT().find(x=>x.id===taskId);owners=t?.owners||[]}
+  const sugg=getTeamSugg();
+  const dd=document.createElement('div');dd.className='a-dd';
+  const rect=btn.getBoundingClientRect();
+  dd.style.top=(rect.bottom+4)+'px';dd.style.left=rect.left+'px';
+  dd.innerHTML=`<input class="a-inp" placeholder="Search…" id="a-inp-${taskId}-${subId}">
+    <div id="aopts-${taskId}-${subId}">${sugg.map(m=>`<div class="a-opt" data-taskid="${taskId}" data-subid="${subId||''}" data-name="${esc(m.name)}"><div class="a-av">${m.photo?`<img src="${m.photo}" alt="">`:m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${owners.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('')}</div>`;
+  dd.querySelector('.a-inp').addEventListener('input',function(){
+    const v=this.value.toLowerCase(),filtered=sugg.filter(m=>m.name.toLowerCase().includes(v));
+    const el=document.getElementById(`aopts-${taskId}-${subId}`);
+    if(el)el.innerHTML=filtered.map(m=>`<div class="a-opt" data-taskid="${taskId}" data-subid="${subId||''}" data-name="${esc(m.name)}"><div class="a-av">${m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${owners.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('');
+  });
+  dd.querySelector('.a-inp').addEventListener('keydown',function(e){
+    if(e.key==='Enter'){const v=this.value.trim();if(v){toggleOwnerByName(taskId,subId||null,v);dd.remove()}}
+  });
+  dd.addEventListener('click',e=>{
+    const opt=e.target.closest('.a-opt');if(!opt)return;
+    const tid=parseInt(opt.dataset.taskid),sid=opt.dataset.subid?parseInt(opt.dataset.subid):null;
+    toggleOwnerByName(tid,sid,opt.dataset.name);dd.remove();
+  });
+  document.body.appendChild(dd);
+  setTimeout(()=>document.addEventListener('click',function h(e){if(!dd.contains(e.target)&&!btn.contains(e.target)){dd.remove();document.removeEventListener('click',h)}},true),10);
+}
+async function toggleOwnerByName(taskId,subId,name){
+  const t=GT().find(x=>x.id===taskId);if(!t)return;
+  if(subId!==null&&subId!==undefined){
+    const s=t.subtasks.find(x=>x.id===subId);if(!s)return;
+    s.owners=s.owners||[];s.owners=s.owners.includes(name)?s.owners.filter(x=>x!==name):[...s.owners,name];
+  }else{
+    t.owners=t.owners||[];t.owners=t.owners.includes(name)?t.owners.filter(x=>x!==name):[...t.owners,name];
+    if(!t.owners.includes(name)){}else notifyAssigned(t.task,name);
+  }
+  renderTable();save();await cuTask(t);
+}
+async function removeOwner(taskId,subId,name){
+  const t=GT().find(x=>x.id===taskId);if(!t)return;
+  if(subId){const s=t.subtasks.find(x=>x.id===subId);if(s)s.owners=(s.owners||[]).filter(x=>x!==name)}
+  else t.owners=(t.owners||[]).filter(x=>x!==name);
+  renderTable();save();await cuTask(t);
+}
+
+// ─── TABLE RENDER ─────────────────────────────────────────
+function applyF(tasks){return tasks.filter(t=>Object.entries(filters).every(([k,v])=>!v?.length||v.includes(String(t[k]||''))))}
+
+function renderParentCell(t, c){
+  const v=t[c.id]??'';
+  if(c.id==='task') return `<div class="task-cell-wrap">
+    <button class="exp-btn ${expanded[t.id]?'open':''}" data-exp="${t.id}" title="Subtasks (${(t.subtasks||[]).length})">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,1 7,4.5 2,8"/></svg>
+    </button>
+    <textarea class="task-ta" rows="1" data-tid="${t.id}" data-col="task" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.blur()}">${esc(v)}</textarea>
+    <button style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-3);border-radius:4px;flex-shrink:0;opacity:.5" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5" data-open="${t.id}" title="Open details"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+  </div>`;
+  if(c.type==='list') return `<div style="padding:5px 10px">${mkBadge(`badge-${t.id}-${c.id}`,c.id,v,c,t.id)}</div>`;
+  if(c.type==='multi') return renderAssigneeCell(t.owners,t.id);
+  if(c.type==='date') return renderDateCell(t.id,v,t.status);
+  return`<div style="padding:5px 10px"><input class="cell-in" value="${esc(v)}" data-tid="${t.id}" data-col="${c.id}"></div>`;
+}
+
+function renderSubRow(t, s){
+  // Subtask has: indent(spans cb+live=70px) | task col | status col | priority col | owners col | dueDate col | act(empty)
+  const statusCol=columns.find(c=>c.id==='status');
+  const priorityCol=columns.find(c=>c.id==='priority');
+  const cells = columns.map(c=>{
+    if(c.id==='task') return `<td style="min-width:${px(c.width)}">
+      <div class="sub-task-cell">
+        <input type="checkbox" class="sub-check" ${s.done?'checked':''} data-tid="${t.id}" data-sid="${s.id}">
+        <input class="sub-name-in ${s.done?'done-txt':''}" value="${esc(s.title||'')}" placeholder="Subtask…"
+          data-tid="${t.id}" data-sid="${s.id}" data-col="title">
+        <button class="sub-del-btn" data-tid="${t.id}" data-sid="${s.id}" title="Delete subtask">✕</button>
+      </div>
+    </td>`;
+    if(c.type==='list'){
+      const val=s[c.id]||(c.id==='status'?'todo':'medium');
+      return`<td style="min-width:${px(c.width)}"><div style="padding:5px 10px">${mkBadge(`sub-badge-${t.id}-${s.id}-${c.id}`,c.id,val,c,t.id,s.id)}</div></td>`;
+    }
+    if(c.type==='multi') return`<td style="min-width:${px(c.width)}">${renderAssigneeCell(s.owners||[],t.id,s.id)}</td>`;
+    if(c.type==='date') return`<td style="min-width:${px(c.width)}"><div style="padding:5px 10px;font-size:12px;color:var(--text-3)">${fdate(s.dueDate)||'—'}</div></td>`;
+    return`<td style="min-width:${px(c.width)}"></td>`;
+  }).join('');
+  return `<tr class="sub-tr" data-tid="${t.id}" data-sid="${s.id}">
+    <td class="sub-indent" style="width:70px;min-width:70px" colspan="2"></td>
+    ${cells}
+    <td style="width:44px"></td>
+  </tr>`;
+}
+
+function renderSubAddRow(t){
+  return`<tr class="sub-add-tr"><td colspan="${columns.length+3}">
+    <div class="sub-add-inline" data-addsubtid="${t.id}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add subtask
+    </div>
+  </td></tr>`;
+}
+
+function renderRow(t, isDone=false){
+  const od=isOD(t.dueDate,t.status),isLive=myLiveTask===t.task&&myLiveTask!==null,isSel=selectedIds.has(t.id);
+  const cls=[od&&!isDone?'od-row':'',isLive&&!isDone?'live-row':'',isSel?'selected-row':'',isDone?'done-row':''].filter(Boolean).join(' ');
+  const cells=columns.map(c=>`<td>${renderParentCell(t,c)}</td>`).join('');
+  const rows = [`<tr class="${cls}" data-tid="${t.id}" draggable="${!isDone}" ondragstart="rDS(event,${t.id})" ondragover="rDO(event)" ondragleave="rDL(event)" ondrop="rDD(event,${t.id})">
+    <td class="cb-cell"><input type="checkbox" class="row-cb" ${isSel?'checked':''} data-sel="${t.id}"></td>
+    <td class="live-cell"><button class="live-btn ${isLive?'is-live':''}" data-live="${t.id}" title="Set live"><span class="row-live-dot"></span></button></td>
+    ${cells}
+    <td class="act-cell"><button class="act-btn" data-menu="${t.id}">⋯</button></td>
+  </tr>`];
+  if(expanded[t.id]){
+    (t.subtasks||[]).forEach(s=>rows.push(renderSubRow(t,s)));
+    rows.push(renderSubAddRow(t));
+  }
+  return rows.join('');
+}
+
+function colDS(e,id){colDragSrc=id;e.dataTransfer.effectAllowed='move'}
+function colDO(e,id){e.preventDefault();if(colDragSrc&&colDragSrc!==id){document.querySelectorAll('th.col-over').forEach(x=>x.classList.remove('col-over'));e.currentTarget.classList.add('col-over')}}
+function colDL(e){e.currentTarget.classList.remove('col-over')}
+function colDE(e){document.querySelectorAll('th.col-over').forEach(x=>x.classList.remove('col-over'))}
+function colDrop(e,tid){e.preventDefault();e.currentTarget.classList.remove('col-over');if(!colDragSrc||colDragSrc===tid)return;const si=columns.findIndex(c=>c.id===colDragSrc),ti=columns.findIndex(c=>c.id===tid);if(si<0||ti<0)return;const[m]=columns.splice(si,1);columns.splice(ti,0,m);colDragSrc=null;renderTable();save()}
+
+function renderTable(){
+  const allTasks=applyF(GT());
+  const active=allTasks.filter(t=>t.status!=='done');
+  const done=allTasks.filter(t=>t.status==='done');
+
+  const ths=columns.map(c=>{const hf=Boolean(filters[c.id]?.length);
+    return`<th draggable="true" style="min-width:${px(c.width)};cursor:grab"
+      ondragstart="colDS(event,'${c.id}')" ondragover="colDO(event,'${c.id}')"
+      ondragleave="colDL(event)" ondrop="colDrop(event,'${c.id}')" ondragend="colDE(event)">
+      <div class="th-in"><span style="font-size:11px;color:var(--border-strong)">⠿</span>
+        <span>${esc(c.label)}</span>
+        <span class="th-ed" onclick="openColEd('${c.id}')">✎</span>
+        <span class="th-flt ${hf?'on':''}" onclick="togFlt('${c.id}',event)">▾</span>
+      </div></th>`}).join('');
+
+  const addRow=`<tr class="add-task-row"><td colspan="${columns.length+4}">
+    <div class="add-task-inline" id="tbl-add-task">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add task
+    </div></td></tr>`;
+
+  let activeRows='';
+  if(active.length===0&&done.length===0){
+    activeRows=`<tr><td colspan="${columns.length+4}"><div class="empty-state">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      <h3>No tasks yet</h3><p>Paste your daily agenda below or click <strong>New task</strong></p>
+    </div></td></tr>`;
+  }else{
+    activeRows=active.map(t=>renderRow(t,false)).join('');
+  }
+
+  const doneTrigger=done.length>0?`<tr class="done-trigger-row"><td colspan="${columns.length+4}" style="padding:0;border:none">
+    <div class="done-trigger" id="done-trigger">
+      <span class="done-chevron ${doneExpanded?'open':''}"><svg width="10" height="10" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,1 7,4.5 2,8"/></svg></span>
+      <span class="done-label">Completed</span>
+      <span class="done-pill">${done.length}</span>
+    </div>
+  </td></tr>`:'';
+  const doneRows=doneExpanded&&done.length>0?done.map(t=>renderRow(t,true)).join(''):'';
+
+  const el=document.getElementById('tbl');if(!el)return;
+  const allSel=active.length>0&&active.every(t=>selectedIds.has(t.id));
+  const someSel=active.some(t=>selectedIds.has(t.id));
+
+  el.innerHTML=`<table><thead><tr>
+    <th class="cb-cell"><input type="checkbox" class="row-cb" id="sa-cb" style="display:block" ${allSel?'checked':''}></th>
+    <th class="live-cell"></th>${ths}
+    <th><button class="add-col-btn" onclick="openColCreate()">+</button></th>
+  </tr></thead><tbody>${addRow}${activeRows}${doneTrigger}${doneRows}</tbody></table>`;
+
+  const cb=document.getElementById('sa-cb');if(cb)cb.indeterminate=someSel&&!allSel;
+
+  // Re-attach floating menu
+  if(menuFor!==null){
+    const arr=applyF(GT()).filter(t=>t.status!=='done');
+    const idx=arr.findIndex(t=>t.id===menuFor);
+    const menu=document.createElement('div');menu.className='act-menu';
+    menu.innerHTML=`<button class="act-item" data-mact="up" data-mid="${menuFor}" ${idx<=0?'disabled':''}>↑ Move up</button>
+      <button class="act-item" data-mact="down" data-mid="${menuFor}" ${idx>=arr.length-1?'disabled':''}>↓ Move down</button>
+      <div class="msep"></div>
+      <button class="act-item" data-mact="detail" data-mid="${menuFor}">Open detail</button>
+      <button class="act-item" data-mact="dup" data-mid="${menuFor}">Duplicate</button>
+      <button class="act-item" data-mact="addsub" data-mid="${menuFor}">Add subtask</button>
+      <div class="msep"></div>
+      <button class="act-item danger" data-mact="del" data-mid="${menuFor}">Delete</button>`;
+    menu.style.top=menuPos.y+'px';menu.style.left=menuPos.x+'px';
+    document.body.appendChild(menu);
+  }
+
+  setTimeout(()=>{document.querySelectorAll('.task-ta').forEach(ta=>autoGrow(ta));applySearchHighlight()},0);
+}
+
+// ─── Delegated event handler for the whole table ──────────
+document.addEventListener('click', e=>{
+  // Ignore clicks outside the app table entirely
+  if(!e.target.closest('#tbl')&&!e.target.closest('.act-menu')&&!e.target.closest('.signal-dd')&&!e.target.closest('.done-trigger')){
+    // Still handle close-on-outside-click cleanup
+    if(!e.target.closest('.th-flt')&&!e.target.closest('.flt-menu'))document.querySelectorAll('.flt-menu').forEach(m=>m.remove());
+    if(!e.target.closest('.sig-badge')&&!e.target.closest('.signal-dd'))closeAllDD();
+    if(!e.target.closest('.act-menu')&&!e.target.closest('[data-menu]')&&menuFor!==null){menuFor=null;document.querySelectorAll('.act-menu').forEach(m=>m.remove())}
+    return;
+  }
+  // Expand/collapse subtasks
+  const exp=e.target.closest('[data-exp]');
+  if(exp){toggleExp(parseInt(exp.dataset.exp));return}
+  // Open side panel
+  const openBtn=e.target.closest('[data-open]');
+  if(openBtn){openSidePanel(parseInt(openBtn.dataset.open));return}
+  // Badge click → show dropdown
+  const badge=e.target.closest('.sig-badge[data-col]');
+  if(badge){
+    const tid=parseInt(badge.dataset.taskid);
+    const sid=badge.dataset.subid?parseInt(badge.dataset.subid):null;
+    showListDD(badge, badge.dataset.col, badge.dataset.val, tid, sid);
+    return;
+  }
+  // Date pill click
+  const dp=e.target.closest('.date-pill[data-tid]');
+  if(dp){openFP(dp.id, parseInt(dp.dataset.tid), dp.dataset.val||'');return}
+  // Row checkbox
+  const sel=e.target.closest('[data-sel]');
+  if(sel){toggleSelect(parseInt(sel.dataset.sel),sel.checked);return}
+  // Select all
+  const sa=e.target.closest('#sa-cb');
+  if(sa){toggleSelectAll(sa.checked);return}
+  // Live dot
+  const live=e.target.closest('[data-live]');
+  if(live){setLiveTask(parseInt(live.dataset.live));return}
+  // Row menu
+  const menu=e.target.closest('[data-menu]');
+  if(menu&&!e.target.closest('.act-menu')){togMenu(parseInt(menu.dataset.menu),e);return}
+  // Menu actions
+  const mact=e.target.closest('[data-mact]');
+  if(mact){
+    const id=parseInt(mact.dataset.mid);
+    document.querySelectorAll('.act-menu').forEach(m=>m.remove());menuFor=null;
+    if(mact.dataset.mact==='up')moveRow(id,-1);
+    else if(mact.dataset.mact==='down')moveRow(id,1);
+    else if(mact.dataset.mact==='detail'){openSidePanel(id)}
+    else if(mact.dataset.mact==='dup')dupTask(id);
+    else if(mact.dataset.mact==='addsub')addSub(id);
+    else if(mact.dataset.mact==='del')delTask(id);
+    return;
+  }
+  // Add task inline
+  if(e.target.closest('#tbl-add-task')){addTaskRow();return}
+  // Done section toggle
+  if(e.target.closest('#done-trigger')){toggleDoneSection();return}
+  // Add subtask inline
+  const addSt=e.target.closest('[data-addsubtid]');
+  if(addSt){addSub(parseInt(addSt.dataset.addsubtid));return}
+  // Subtask checkbox
+  const subCb=e.target.closest('.sub-check');
+  if(subCb){togSub(parseInt(subCb.dataset.tid),parseInt(subCb.dataset.sid));return}
+  // Subtask delete
+  const subDel=e.target.closest('.sub-del-btn');
+  if(subDel){delSub(parseInt(subDel.dataset.tid),parseInt(subDel.dataset.sid));return}
+  // Chip delete (owner remove)
+  const chipDel=e.target.closest('.chip-del');
+  if(chipDel){
+    const tid=parseInt(chipDel.dataset.taskid);
+    const sid=chipDel.dataset.subid?parseInt(chipDel.dataset.subid):null;
+    removeOwner(tid,sid,chipDel.dataset.owner);return;
+  }
+  // Chip add (owner add)
+  const chipAdd=e.target.closest('.chip-add');
+  if(chipAdd){
+    const tid=parseInt(chipAdd.dataset.taskid);
+    const sid=chipAdd.dataset.subid?parseInt(chipAdd.dataset.subid):null;
+    openAssignDD(tid,sid,chipAdd);return;
+  }
+  // Close menus on outside click
+  if(!e.target.closest('.act-menu')&&!e.target.closest('[data-menu]')&&menuFor!==null){
+    menuFor=null;document.querySelectorAll('.act-menu').forEach(m=>m.remove());
+  }
+  if(!e.target.closest('.th-flt')&&!e.target.closest('.flt-menu'))document.querySelectorAll('.flt-menu').forEach(m=>m.remove());
+  if(!e.target.closest('.sig-badge')&&!e.target.closest('.signal-dd'))closeAllDD();
+});
+
+// Delegated change handler
+document.addEventListener('change', e=>{
+  const ta=e.target.closest('.task-ta[data-tid]');
+  if(ta){updCell(parseInt(ta.dataset.tid),'task',ta.value);return}
+  const ci=e.target.closest('.cell-in[data-tid]');
+  if(ci){updCell(parseInt(ci.dataset.tid),ci.dataset.col,ci.value);return}
+  const sn=e.target.closest('.sub-name-in[data-tid]');
+  if(sn){editSub(parseInt(sn.dataset.tid),parseInt(sn.dataset.sid),sn.value);return}
+});
+document.addEventListener('input', e=>{
+  const ta=e.target.closest('.task-ta');if(ta)autoGrow(ta);
+});
+
+function toggleDoneSection(){doneExpanded=!doneExpanded;renderTable()}
+
+// ─── Task CRUD ────────────────────────────────────────────
+function setLiveTask(tid){
+  const t=GT().find(x=>x.id===tid);if(!t)return;
+  myLiveTask=myLiveTask===t.task?null:t.task;
+  const lt=document.getElementById('live-task-txt');
+  if(lt){lt.textContent=myLiveTask||'Not working on anything specific';lt.className='live-task-txt'+(myLiveTask?' set':'')}
+  if(myLiveTask)toast('● Now live: '+myLiveTask);
+  renderTable();
+}
+function rDS(e,id){rowDragSrc=id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move'}
+function rDO(e){e.preventDefault();e.currentTarget.classList.add('drag-over')}
+function rDL(e){e.currentTarget.classList.remove('drag-over')}
+function rDD(e,tid){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(!rowDragSrc||rowDragSrc===tid)return;const arr=GT(),si=arr.findIndex(t=>t.id===rowDragSrc),ti=arr.findIndex(t=>t.id===tid);if(si<0||ti<0)return;const[m]=arr.splice(si,1);arr.splice(ti,0,m);rowDragSrc=null;renderTable();save();arr.forEach(t=>cuTask(t))}
+function moveRow(id,dir){const arr=GT().filter(t=>t.status!=='done'),i=arr.findIndex(t=>t.id===id),ni=i+dir;if(ni<0||ni>=arr.length)return;const gi=GT().indexOf(arr[i]),gni=GT().indexOf(arr[ni]);[GT()[gi],GT()[gni]]=[GT()[gni],GT()[gi]];renderTable();save()}
+function handleSearch(q){searchQuery=q.trim().toLowerCase();const sc=document.getElementById('search-clear');if(sc)sc.classList.toggle('show',q.length>0);applySearchHighlight()}
+function clearSearch(){const si=document.getElementById('search-input');if(si)si.value='';searchQuery='';document.getElementById('search-clear')?.classList.remove('show');applySearchHighlight()}
+function applySearchHighlight(){document.querySelectorAll('#tbl tbody tr[data-tid]').forEach(row=>{if(!searchQuery){row.style.display='';return}row.style.display=row.textContent.toLowerCase().includes(searchQuery)?'':'none'})}
+function toggleSelect(id,checked){if(checked)selectedIds.add(id);else selectedIds.delete(id);updBulkBar();document.querySelector(`tr[data-tid="${id}"]`)?.classList.toggle('selected-row',checked)}
+function toggleSelectAll(checked){const vis=applyF(GT()).filter(t=>t.status!=='done'&&(!searchQuery||t.task.toLowerCase().includes(searchQuery)));vis.forEach(t=>checked?selectedIds.add(t.id):selectedIds.delete(t.id));renderTable();updBulkBar()}
+function updBulkBar(){const n=selectedIds.size;const bar=document.getElementById('bulk-bar');if(!bar)return;if(n>0){bar.classList.add('show');const bc=document.getElementById('bulk-count');if(bc)bc.textContent=n+' selected'}else bar.classList.remove('show')}
+function clearSelection(){selectedIds.clear();updBulkBar();renderTable()}
+async function bulkStatus(status){for(const id of [...selectedIds])await updCell(id,'status',status);toast(selectedIds.size+' tasks updated');clearSelection()}
+async function bulkDelete(){const ids=[...selectedIds];confirmDel(`Delete ${ids.length} task${ids.length>1?'s':''}?`,async()=>{for(const id of ids){const t=GT().find(x=>x.id===id);if(t){trash.push({id:t.id,task:{...t},deletedAt:Date.now(),projId:curProj});pushUndo({type:'delete',task:{...t},projId:curProj})}byProj[curProj]=GT().filter(x=>x.id!==id);if(sb)await sb.from('tasks').delete().eq('id',id)}clearSelection();renderAll();updateStats();save();toast(ids.length+' tasks deleted')})}
+async function addTaskRow(title=''){
+  const t=normTask({task:title||'New task'});GT().unshift(t);pushUndo({type:'add',task:{...t},projId:curProj});
+  if(curView!=='table')switchView('table');renderTable();updateStats();save();await cuTask(t);if(title)toast('Task added');
+  setTimeout(()=>{const ta=document.querySelector('#tbl tbody tr[data-tid] .task-ta');if(ta){ta.focus();ta.select()}},50);
+}
+async function updCell(id,key,val){const t=GT().find(x=>x.id===id);if(!t)return;t[key]=val;updateStats();save();await cuTask(t);if(curView==='board')renderBoard();else scheduleRender()}
+async function delTask(id){
+  menuFor=null;document.querySelectorAll('.act-menu').forEach(m=>m.remove());
+  const t=GT().find(x=>x.id===id);if(!t)return;
+  const n=(t.task||'this task').slice(0,50);
+  confirmDel(`Delete "${n}"?`,async()=>{trash.push({id:t.id,task:{...t},deletedAt:Date.now(),projId:curProj});pushUndo({type:'delete',task:{...t},projId:curProj});byProj[curProj]=GT().filter(x=>x.id!==id);renderAll();updateStats();save();if(sb)await sb.from('tasks').delete().eq('id',id);toast('Deleted — Ctrl+Z to undo')});
+}
+function dupTask(id){const t=GT().find(x=>x.id===id);if(!t)return;const c=normTask({...t,id:Date.now()});GT().unshift(c);pushUndo({type:'add',task:{...c},projId:curProj});renderTable();updateStats();save();cuTask(c);toast('Duplicated')}
+function toggleExp(id){expanded[id]=!expanded[id];renderTable()}
+function togMenu(id,e){
+  e.stopPropagation();document.querySelectorAll('.act-menu').forEach(m=>m.remove());
+  if(menuFor===id){menuFor=null;return}
+  menuFor=id;const rect=e.currentTarget.getBoundingClientRect();
+  menuPos={x:Math.min(rect.left-120,window.innerWidth-170),y:Math.min(rect.bottom+4,window.innerHeight-200)};
+  renderTable();
+}
+async function addSub(tid){const t=GT().find(x=>x.id===tid);if(!t)return;t.subtasks=t.subtasks||[];t.subtasks.push({id:Date.now(),title:'New subtask',done:false,status:'todo',priority:'medium',owners:[],dueDate:''});expanded[tid]=true;menuFor=null;renderTable();save();await cuTask(t)}
+async function togSub(tid,sid){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;s.done=!s.done;if(s.done)s.status='done';renderTable();save();await cuTask(t)}
+async function editSub(tid,sid,val){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;s.title=val;save();await cuTask(t)}
+async function delSub(tid,sid){const t=GT().find(x=>x.id===tid);if(!t)return;t.subtasks=t.subtasks.filter(x=>x.id!==sid);renderTable();save();await cuTask(t)}
+
+// ─── Columns ──────────────────────────────────────────────
+function openColCreate(){const id='col_'+Date.now();columns.push({id,label:'New column',type:'text',required:false,width:170});Object.keys(byProj).forEach(pid=>byProj[pid]=byProj[pid].map(normTask));renderTable();save();openColEd(id)}
+function buildOptRows(c){return(c.options||[]).map((o,i)=>`<div class="opt-row" id="or-${i}"><input class="f-in2" style="flex:1" value="${esc(o.v)}" id="ov-${i}" onchange="prvOpt(${i})"><span style="font-size:11px;color:var(--text-3)">bg</span><input type="color" value="${o.bg}" id="ob-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt(${i})"><span style="font-size:11px;color:var(--text-3)">text</span><input type="color" value="${o.tc}" id="ot-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt(${i})"><span class="sig-badge" id="op-${i}" style="background:${o.bg};color:${o.tc};min-width:54px;justify-content:center"><span class="bdot" style="background:${o.tc}"></span><span class="badge-lbl">${esc(o.v)}</span></span><button class="opt-del" onclick="document.getElementById('or-${i}').remove()">✕</button></div>`).join('')}
+function prvOpt(i){const v=document.getElementById('ov-'+i)?.value||'',bg=document.getElementById('ob-'+i)?.value||'#f0f0f0',tc=document.getElementById('ot-'+i)?.value||'#333';const p=document.getElementById('op-'+i);if(p){p.style.background=bg;p.style.color=tc;p.querySelector('.bdot').style.background=tc;p.querySelector('.badge-lbl').textContent=v}}
+function addOptRow(){const c=document.getElementById('opt-rows'),i='n'+Date.now();const d=document.createElement('div');d.className='opt-row';d.id='or-'+i;d.innerHTML=`<input class="f-in2" style="flex:1" value="Option" id="ov-${i}" onchange="prvOpt('${i}')"><span style="font-size:11px;color:var(--text-3)">bg</span><input type="color" value="#EEF0FF" id="ob-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt('${i}')"><span style="font-size:11px;color:var(--text-3)">text</span><input type="color" value="#4338CA" id="ot-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt('${i}')"><span class="sig-badge" id="op-${i}" style="background:#EEF0FF;color:#4338CA;min-width:54px;justify-content:center"><span class="bdot" style="background:#4338CA"></span><span class="badge-lbl">Option</span></span><button class="opt-del" onclick="this.closest('.opt-row').remove()">✕</button>`;c.appendChild(d)}
+function openColEd(id){const c=columns.find(x=>x.id===id);if(!c)return;const types=['text','number','date','list','multi'].map(t=>`<option ${(c.type||'text')===t?'selected':''} value="${t}">${{list:'List (dropdown)',multi:'Multi-assignee'}[t]||t}</option>`).join('');openModal({title:'Edit column',wide:true,showDel:!c.required,body:`<div><label class="f-lbl2">Column name</label><input id="cn" class="f-in2" value="${esc(c.label)}"></div><div><label class="f-lbl2">Type</label><select id="ct" class="f-in2" onchange="togOptSec(this.value)">${types}</select></div><div id="opt-sec" style="${c.type==='list'?'':'display:none'}"><label class="f-lbl2">Options & colours</label><div id="opt-rows">${buildOptRows(c)}</div><button type="button" onclick="addOptRow()">+ Add option</button></div>`,save:'Save',onSave:()=>{c.label=document.getElementById('cn').value.trim()||c.label;c.type=document.getElementById('ct').value;if(c.type==='list'){const rows=document.querySelectorAll('#opt-rows .opt-row');c.options=[...rows].map(r=>{const i=r.id.replace('or-','');return{v:document.getElementById('ov-'+i)?.value||'',bg:document.getElementById('ob-'+i)?.value||'#f0f0f0',tc:document.getElementById('ot-'+i)?.value||'#333'}}).filter(o=>o.v.trim())}else c.options=[];renderTable();save();closeModal()},onDel:()=>{columns=columns.filter(x=>x.id!==id);Object.keys(byProj).forEach(pid=>byProj[pid].forEach(t=>delete t[id]));renderTable();save();closeModal()}})}
+function togOptSec(v){const s=document.getElementById('opt-sec');if(s)s.style.display=v==='list'?'':'none'}
+
+// ─── Filters ──────────────────────────────────────────────
+function togFlt(id,e){
+  e.stopPropagation();document.querySelectorAll('.flt-menu').forEach(m=>m.remove());
+  const vals=[...new Set(GT().map(t=>String(t[id]||'')))],active=filters[id]||[];
+  const m=document.createElement('div');m.className='flt-menu';
+  m.innerHTML=vals.map(v=>`<label class="flt-lbl"><input type="checkbox" ${active.includes(v)?'checked':''} onchange="togFV('${id}','${String(v).replace(/'/g,"\\'")}')"><span>${esc(v||'(empty)')}</span></label>`).join('')+`<button class="flt-clr" onclick="clearFlt('${id}')">Clear</button>`;
+  const rect=e.currentTarget.getBoundingClientRect();
+  m.style.top=Math.min(rect.bottom+4,window.innerHeight-200)+'px';m.style.left=Math.min(rect.left,window.innerWidth-180)+'px';
+  document.body.appendChild(m);
+  setTimeout(()=>document.addEventListener('click',function h(ev){if(!m.contains(ev.target)){m.remove();document.removeEventListener('click',h)}},true),10);
+}
+function togFV(id,v){filters[id]=filters[id]||[];filters[id]=filters[id].includes(v)?filters[id].filter(x=>x!==v):[...filters[id],v];renderTable();save()}
+function clearFlt(id){delete filters[id];renderTable();save()}
+
+// ─── Board ────────────────────────────────────────────────
+const bCols=[{id:'todo',label:'To do',color:'#9499AD'},{id:'progress',label:'In progress',color:'#3B82F6'},{id:'waiting',label:'Waiting',color:'#F59E0B'},{id:'done',label:'Done',color:'#10B981'}];
+function renderBoard(){
+  const tasks=GT(),pc=columns.find(c=>c.id==='priority');
+  const el=document.getElementById('board-view');if(!el)return;
+  el.innerHTML=bCols.map(col=>{const ct=tasks.filter(t=>t.status===col.id);
+    const cards=ct.map(t=>{const od=isOD(t.dueDate,t.status),{bg,tc}=listStyle(pc,t.priority);const avs=(t.owners||[]).slice(0,4).map(a=>`<div class="b-av">${a[0].toUpperCase()}</div>`).join('');
+      return`<div class="b-card" draggable="true" ondragstart="bDS(event,${t.id})" ondragend="bDE(event)"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="sig-badge" style="background:${bg};color:${tc};font-size:10px;padding:2px 7px"><span class="bdot" style="background:${tc}"></span><span class="badge-lbl">${t.priority}</span></span></div><div class="b-title">${esc(t.task)}</div><div class="b-foot"><div class="b-avs">${avs||`<span style="font-size:11px;color:var(--text-3)">Unassigned</span>`}</div><span class="b-due ${od?'od':''}">${fdate(t.dueDate)}</span></div></div>`}).join('');
+    return`<div class="b-col"><div class="b-col-head"><div class="b-col-title"><span style="width:8px;height:8px;border-radius:50%;background:${col.color};display:inline-block"></span>${col.label}</div><span class="b-count">${ct.length}</span></div><div class="b-body" data-status="${col.id}" ondragover="bDO(event)" ondragleave="bDL(event)" ondrop="bDrop(event,'${col.id}')">${cards}<button class="b-add" onclick="addWithStatus('${col.id}')">+ Add task</button></div></div>`;
+  }).join('');
+}
+function bDS(e,id){bDragSrc=id;setTimeout(()=>e.target.classList.add('dragging'),0)}
+function bDE(e){e.target.classList.remove('dragging')}
+function bDO(e){e.preventDefault();e.currentTarget.classList.add('drag-over')}
+function bDL(e){e.currentTarget.classList.remove('drag-over')}
+function bDrop(e,status){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(!bDragSrc)return;const t=GT().find(x=>x.id===bDragSrc);if(t&&t.status!==status){t.status=status;save();cuTask(t);renderBoard();updateStats();toast('Moved to '+slbl(status))}bDragSrc=null}
+async function addWithStatus(status){const t=normTask({status});GT().unshift(t);renderBoard();updateStats();save();await cuTask(t)}
+
+// ─── Live view ────────────────────────────────────────────
+function renderLive(){const el=document.getElementById('live-grid');if(!el)return;el.innerHTML=teamMembers.map(m=>`<div class="lm-card"><div class="lm-head"><div class="lm-av-wrap"><div class="lm-av">${(m.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div><span class="sdot ${m.status||'offline'}"></span></div><div><div class="lm-name">${esc(m.name)}</div><div class="lm-time">${m.status==='active'?'Active now':m.status==='idle'?'Away':'Offline'}</div></div></div><div class="lm-box ${m.liveTask?'has':''}">${m.liveTask?`<div class="lm-box-lbl">Working on</div><div class="lm-box-txt">${esc(m.liveTask)}</div>`:`<div class="lm-box-empty">No active task</div>`}</div></div>`).join('')||`<div style="color:var(--text-3);font-size:13px;text-align:center;padding:24px;grid-column:1/-1">No team members yet. <button onclick="openSettings()" style="background:none;border:none;color:var(--brand);cursor:pointer;font-size:13px;text-decoration:underline">Invite from Settings</button>.</div>`}
+function openLiveModal(){const tasks=GT().filter(t=>t.status!=='done');openModal({title:'Set your live task',save:'',body:`<p style="font-size:12px;color:var(--text-3);margin-bottom:8px">What are you working on right now?</p>${tasks.map(t=>`<button class="live-task-opt" onclick="setLiveFromModal('${esc(t.task)}')"><p>${esc(t.task)}</p><span>${slbl(t.status)}</span></button>`).join('')}${!tasks.length?'<p style="color:var(--text-3);text-align:center;padding:16px">No active tasks</p>':''}`,onSave:null,showDel:false});setTimeout(()=>{const f=document.querySelector('.mo-foot');if(f)f.style.display='none'},10)}
+function setLiveFromModal(title){myLiveTask=title;const lt=document.getElementById('live-task-txt');if(lt){lt.textContent=title;lt.className='live-task-txt set'}closeModal();renderTable();toast('Live task updated!')}
+
+// ─── Side panel ───────────────────────────────────────────
+function openSidePanel(tid){
+  const t=GT().find(x=>x.id===tid);if(!t)return;
+  const sp=document.getElementById('side-panel');if(!sp)return;
+  document.getElementById('sp-title').textContent=t.task||'Task Detail';
+  const body=document.getElementById('sp-body');if(!body)return;
+  const tc=comments[tid]||[];
+  body.innerHTML=`<div class="sp-section"><div class="sp-lbl">Description</div><textarea class="sp-desc" placeholder="Add a description…" onchange="updTaskDesc(${tid},this.value)">${esc(t.description||'')}</textarea></div>
+    <div class="sp-section"><div class="sp-lbl">Details</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+      <div><div style="color:var(--text-3);margin-bottom:3px">Status</div><div style="font-weight:500">${slbl(t.status)}</div></div>
+      <div><div style="color:var(--text-3);margin-bottom:3px">Priority</div><div style="font-weight:500">${t.priority||'—'}</div></div>
+      <div><div style="color:var(--text-3);margin-bottom:3px">Due date</div><div style="font-weight:500">${fdate(t.dueDate)||'—'}</div></div>
+      <div><div style="color:var(--text-3);margin-bottom:3px">Owner</div><div style="font-weight:500">${(t.owners||[]).join(', ')||'—'}</div></div>
+    </div></div>
+    <div class="sp-section"><div class="sp-lbl">Comments (${tc.length})</div>
+      <div class="sp-comment-list">${tc.map(c=>`<div class="sp-comment"><div class="sp-cav">${avHTML(null,c.author)}</div><div class="sp-cbody"><div class="sp-cname">${esc(c.author)}</div><div class="sp-ctext">${esc(c.text)}</div><div class="sp-ctime">${new Date(c.ts).toLocaleString()}</div></div></div>`).join('')||'<div style="font-size:12px;color:var(--text-3)">No comments yet</div>'}</div>
+      <div class="sp-comment-inp"><div class="sp-cav">${avHTML(profile.photo,profile.name)}</div><textarea class="sp-cinput" id="sp-cinput-${tid}" placeholder="Add a comment… (Enter to send)" rows="1" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addComment(${tid})}"></textarea></div>
+    </div>
+    <div class="sp-section"><div class="sp-lbl">Subtasks (${(t.subtasks||[]).length})</div>
+      ${(t.subtasks||[]).map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><input type="checkbox" style="accent-color:var(--brand)" ${s.done?'checked':''} onchange="togSub(${tid},${s.id})"><span style="font-size:12px;flex:1;${s.done?'text-decoration:line-through;opacity:.5':''}">${esc(s.title)}</span></div>`).join('')||'<div style="font-size:12px;color:var(--text-3)">No subtasks</div>'}
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="addSub(${tid})">+ Add subtask</button>
+    </div>`;
+  sp.classList.add('open');
+}
+function closeSidePanel(){document.getElementById('side-panel')?.classList.remove('open')}
+async function updTaskDesc(tid,val){const t=GT().find(x=>x.id===tid);if(!t)return;t.description=val;save();await cuTask(t)}
+function addComment(tid){const inp=document.getElementById('sp-cinput-'+tid);if(!inp||!inp.value.trim())return;comments[tid]=comments[tid]||[];comments[tid].push({id:Date.now(),author:profile.name,text:inp.value.trim(),ts:Date.now()});save();openSidePanel(tid)}
+
+// ─── AI command bar ───────────────────────────────────────
+function handleCmdKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();runPrompt()}}
+function qcmd(p){const i=document.getElementById('cmd-ta');if(!i)return;i.value=p;i.focus();autoGrow(i)}
+async function runPrompt(){
+  const ta=document.getElementById('cmd-ta');if(!ta)return;const text=ta.value.trim();if(!text)return;ta.value='';autoGrow(ta);
+  const lt=document.createElement('div');lt.className='toast';lt.textContent='⚡ Thinking…';document.body.appendChild(lt);
+  const result=await parseCommandWithClaude(text);lt.remove();
+  if(result)return handleParsedCommand(result);
+  addTaskRow(text.replace(/^[-*•·\d.)]+\s*/,'').replace(/^(create|add|new)\s+(a\s+)?(task[s]?[:\s-]*)/i,'').trim()||text);
+}
+async function parseCommandWithClaude(text){
+  try{
+    const taskList=GT().map(t=>`- "${t.task}" (id:${t.id})`).join('\n')||'(no tasks yet)';
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`You are a task management AI. Parse the user's command and return ONLY a JSON object, no markdown.
+Current tasks:\n${taskList}\nUser command: "${text}"
+Return one of:
+1. {"action":"create","tasks":["name1","name2"]}
+2. {"action":"update","taskId":<id>,"field":"status|priority","value":"<val>"}
+3. {"action":"duplicate","taskId":<id>,"variants":["name1"]}
+4. {"action":"addSubtasks","taskId":<id>,"subtasks":["sub1"]}
+5. {"action":"multi","steps":[...]}
+Status values: todo,progress,waiting,done. Priority: low,medium,high. Return ONLY valid JSON.`}]})});
+    const data=await res.json();const raw=data?.content?.[0]?.text||'';return JSON.parse(raw.replace(/```[a-z]*|```/g,'').trim());
+  }catch(e){return null}
+}
+function handleParsedCommand(cmd){
+  if(!cmd?.action)return;
+  if(cmd.action==='create'){const t=cmd.tasks||[];if(!t.length)return;if(t.length===1){addTaskRow(t[0]);return}showParsePreview(t)}
+  else if(cmd.action==='update'){const t=GT().find(x=>x.id===cmd.taskId);if(!t){toast('Task not found',false);return}updCell(t.id,cmd.field,cmd.value);toast(`Updated "${t.task}"`)}
+  else if(cmd.action==='duplicate'){const t=GT().find(x=>x.id===cmd.taskId);if(!t){toast('Task not found',false);return}const v=cmd.variants||[];if(!v.length){dupTask(t.id);return}v.forEach(name=>{const c=normTask({...t,id:Date.now()+Math.random(),task:name});GT().unshift(c);pushUndo({type:'add',task:{...c},projId:curProj});cuTask(c)});renderAll();save();toast(`Created ${v.length} duplicate${v.length>1?'s':''}`)}
+  else if(cmd.action==='addSubtasks'){const t=GT().find(x=>x.id===cmd.taskId);if(!t){toast('Task not found',false);return}t.subtasks=t.subtasks||[];(cmd.subtasks||[]).forEach(name=>t.subtasks.push({id:Date.now()+Math.random(),title:name,done:false,status:'todo',priority:'medium',owners:[],dueDate:''}));expanded[t.id]=true;renderAll();save();cuTask(t);toast(`Added ${cmd.subtasks.length} subtask${cmd.subtasks.length>1?'s':''}`)}
+  else if(cmd.action==='multi'){(cmd.steps||[]).forEach(step=>handleParsedCommand(step))}
+}
+function showParsePreview(tasks){const pp=document.getElementById('parse-preview');if(!pp)return;pp.style.display='block';pp.innerHTML=`<div class="pp-title"><span>⚡ ${tasks.length} tasks found</span><button style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:16px" onclick="hideParsePreview()">×</button></div>`+tasks.map((t,i)=>`<div class="pp-item"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><input type="text" value="${esc(t)}" onkeydown="if(event.key==='Enter')confirmParsed()"></div>`).join('')+`<div class="pp-foot"><button class="btn btn-cancel btn-sm" onclick="hideParsePreview()">Cancel</button><button class="btn btn-primary btn-sm" onclick="confirmParsed()">Add all tasks</button></div>`}
+function hideParsePreview(){const pp=document.getElementById('parse-preview');if(pp)pp.style.display='none'}
+function confirmParsed(){document.querySelectorAll('#parse-preview .pp-item input').forEach(inp=>{const v=inp.value.trim();if(v)addTaskRow(v)});hideParsePreview()}
+
+// ─── Voice ────────────────────────────────────────────────
+let recognition=null,isListening=false;
+function toggleVoice(){
+  const btn=document.getElementById('cmd-voice-btn');
+  if(!('webkitSpeechRecognition'in window||'SpeechRecognition'in window)){toast('Voice not supported. Try Chrome.',false);return}
+  if(isListening){recognition?.stop();return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;recognition=new SR();recognition.continuous=false;recognition.interimResults=true;recognition.lang='en-US';
+  recognition.onstart=()=>{isListening=true;btn?.classList.add('listening');toast('Listening…')};
+  recognition.onresult=(e)=>{const t=[...e.results].map(r=>r[0].transcript).join('');const ta=document.getElementById('cmd-ta');if(ta){ta.value=t;autoGrow(ta)}};
+  recognition.onend=()=>{isListening=false;btn?.classList.remove('listening');const ta=document.getElementById('cmd-ta');if(ta?.value.trim())runPrompt()};
+  recognition.onerror=(e)=>{isListening=false;btn?.classList.remove('listening');if(e.error!=='aborted')toast('Voice error: '+e.error,false)};
+  recognition.start();
+}
+
+function confetti(){['#5B4FE8','#10B981','#F59E0B','#EF4444','#3B82F6'].forEach(c=>{const p=document.createElement('span');const rx=Math.random()*window.innerWidth;p.style.cssText=`position:fixed;pointer-events:none;width:7px;height:7px;border-radius:50%;background:${c};left:${rx}px;top:${window.innerHeight}px;z-index:999;transition:all .9s cubic-bezier(.25,.46,.45,.94)`;document.body.appendChild(p);setTimeout(()=>{p.style.transform=`translate(${(Math.random()-.5)*200}px,${-window.innerHeight*.7-Math.random()*200}px)`;p.style.opacity='0'},20);setTimeout(()=>p.remove(),1000)})}
+
+// ─── Settings ─────────────────────────────────────────────
+function openSettings(tab='members'){
+  const myAv=profile.photo?`<img src="${profile.photo}" alt="">`:((profile.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2));
+  const invLink='https://signal.app/invite/'+Math.random().toString(36).slice(2,10);
+  const memberRows=teamMembers.map(m=>`<div class="member-row"><div class="member-av">${(m.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div><div class="member-info"><div class="member-name">${esc(m.name)}</div><div class="member-email">${esc(m.email||'')}</div></div><span class="member-role">${m.role||'Member'}</span><button class="opt-del" onclick="removeMember('${m.id}')">✕</button></div>`).join('');
+  openModal({title:'Settings',wide:true,body:`
+    <div style="display:flex;gap:4px;border-bottom:1px solid var(--border);padding-bottom:0;margin-bottom:16px">
+      <button class="stab ${tab==='members'?'active':''}" id="stab-members" onclick="switchStab('members')">Members</button>
+      <button class="stab ${tab==='workspace'?'active':''}" id="stab-workspace" onclick="switchStab('workspace')">Workspace</button>
+      <button class="stab ${tab==='account'?'active':''}" id="stab-account" onclick="switchStab('account')">Account</button>
+    </div>
+    <div id="stab-content-members" style="${tab==='members'?'':'display:none'}">
+      <div class="section-title" style="margin-bottom:12px">Invite member</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px"><input id="inv-email" class="f-in2" style="flex:1" placeholder="Email address" type="email"><select id="inv-role" class="f-in2" style="width:110px"><option>Member</option><option>Admin</option></select><button class="btn btn-primary btn-sm" onclick="sendInvite()">Invite</button></div>
+      <div class="section-title" style="margin-bottom:8px;margin-top:16px">Invite link</div>
+      <div class="invite-link-box"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="inv-link">${invLink}</span><button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('inv-link').textContent);toast('Copied!')">Copy</button></div>
+      <div class="section-title" style="margin-bottom:8px;margin-top:16px">Team (${teamMembers.length+1})</div>
+      <div class="member-row"><div class="member-av">${myAv}</div><div class="member-info"><div class="member-name">${esc(profile.name)} (you)</div><div class="member-email">${esc(profile.email)}</div></div><span class="member-role">${profile.role||'Admin'}</span></div>
+      ${memberRows||'<div style="color:var(--text-3);font-size:12px;padding:10px 0">No other members yet.</div>'}
+    </div>
+    <div id="stab-content-workspace" style="${tab==='workspace'?'':'display:none'}">
+      <div style="margin-bottom:12px"><label class="f-lbl2">Workspace name</label><input id="ws-name" class="f-in2" value="${esc(wsName)}"></div>
+      <div><label class="f-lbl2">Default priority</label><select id="ws-pri" class="f-in2"><option value="low" ${wsPriority==='low'?'selected':''}>Low</option><option value="medium" ${wsPriority==='medium'?'selected':''}>Medium</option><option value="high" ${wsPriority==='high'?'selected':''}>High</option></select></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="saveWS()">Save</button>
+    </div>
+    <div id="stab-content-account" style="${tab==='account'?'':'display:none'}">
+      <div class="av-upload" style="margin-bottom:16px">
+        <div class="av-prev" id="sett-av-prev">${profile.photo?`<img src="${profile.photo}" alt="">`:((profile.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2))}</div>
+        <div><button class="av-btn" onclick="document.getElementById('sett-avf').click()">Upload photo</button><input type="file" id="sett-avf" accept="image/*" style="display:none" onchange="triggerCrop(this)"></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="f-lbl2">Name</label><input id="sett-name" class="f-in2" value="${esc(profile.name)}"></div>
+      <div style="margin-bottom:10px"><label class="f-lbl2">Email</label><input id="sett-email" class="f-in2" type="email" value="${esc(profile.email)}"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Change password</div>
+        <div style="margin-bottom:10px"><label class="f-lbl2">New password</label><input id="sett-pw1" class="f-in2" type="password" placeholder="New password"></div>
+        <div style="margin-bottom:10px"><label class="f-lbl2">Confirm</label><input id="sett-pw2" class="f-in2" type="password" placeholder="Confirm password"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAcct()">Save changes</button>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:16px"><button class="btn btn-danger btn-sm" onclick="doLogout();closeModal()">Sign out</button></div>
+    </div>`,save:'',showDel:false,onSave:null});
+  setTimeout(()=>{const f=document.querySelector('.mo-foot');if(f)f.style.display='none'},10);
+}
+function switchStab(tab){['members','workspace','account'].forEach(t=>{document.getElementById('stab-'+t)?.classList.toggle('active',t===tab);const c=document.getElementById('stab-content-'+t);if(c)c.style.display=t===tab?'':'none'})}
+function saveWS(){const n=document.getElementById('ws-name')?.value.trim(),p=document.getElementById('ws-pri')?.value;if(n)wsName=n;if(p)wsPriority=p;save();toast('Workspace saved')}
+function saveAcct(){const n=document.getElementById('sett-name')?.value.trim(),e=document.getElementById('sett-email')?.value.trim(),p1=document.getElementById('sett-pw1')?.value,p2=document.getElementById('sett-pw2')?.value;if(p1&&p1!==p2){toast('Passwords do not match',false);return}if(n)profile.name=n;if(e)profile.email=e;const img=document.getElementById('sett-av-prev')?.querySelector('img');if(img)profile.photo=img.src;updProfile();save();saveProfileRemote();toast('Account updated');closeModal()}
+function triggerCrop(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{openCropModal(e.target.result,dataUrl=>{profile.photo=dataUrl;const prev=document.getElementById('sett-av-prev');if(prev)prev.innerHTML=`<img src="${dataUrl}" alt="">`;updProfile();save();saveProfileRemote();toast('Photo updated')})};r.readAsDataURL(f);inp.value=''}
+function sendInvite(){const email=document.getElementById('inv-email')?.value.trim(),role=document.getElementById('inv-role')?.value||'Member';if(!email){toast('Enter an email',false);return}if(teamMembers.find(m=>m.email===email)){toast('Already invited',false);return}const name=email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());teamMembers.push({id:'tm-'+Date.now(),name,email,role,status:'offline',liveTask:null,photo:null});save();toast('Invite sent to '+email);const inv=document.getElementById('inv-email');if(inv)inv.value=''}
+function removeMember(id){teamMembers=teamMembers.filter(m=>m.id!==id);save();toast('Removed');openSettings('members')}
+
+function openHelp(){openModal({title:'Keyboard shortcuts',body:`<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px;color:var(--text-2)"><span class="kbd">N</span><span>New task</span><span class="kbd">⌘/Ctrl+K</span><span>Focus AI bar</span><span class="kbd">⌘/Ctrl+F</span><span>Search</span><span class="kbd">⌘/Ctrl+Z</span><span>Undo</span><span class="kbd">⌘/Ctrl+Y</span><span>Redo</span><span class="kbd">Del</span><span>Delete selected</span><span class="kbd">Esc</span><span>Close / clear</span></div>`,save:'',onSave:null,showDel:false});setTimeout(()=>{const f=document.querySelector('.mo-foot');if(f)f.style.display='none'},10)}
+
+// ─── Modals ───────────────────────────────────────────────
+function openModal({title,body,onSave,onDel,showDel=false,save:sl='Save',wide=false}){window._ms=onSave;window._md=onDel;document.getElementById('modal-root').innerHTML=`<div class="mo" onclick="if(event.target===this)closeModal()"><div class="mo-box ${wide?'wide':''}"><div class="mo-head"><span class="mo-title">${esc(title)}</span><button class="mo-close" onclick="closeModal()">×</button></div><div class="mo-body">${body}</div><div class="mo-foot"><div>${showDel?`<button class="btn btn-danger btn-sm" onclick="_md&&_md()">Delete</button>`:''}</div><div class="mo-fr"><button class="btn btn-cancel btn-sm" onclick="closeModal()">Cancel</button>${sl?`<button class="btn btn-primary btn-sm" onclick="_ms&&_ms()">${esc(sl)}</button>`:''}</div></div></div></div>`}
+function closeModal(){document.getElementById('modal-root').innerHTML=''}
+function confirmDel(msg,cb){openModal({title:'Confirm delete',body:`<p style="color:var(--text-2);font-size:13px;line-height:1.7">${esc(msg)}</p>`,save:'Delete',onSave:()=>{closeModal();cb()}})}
+function openProjectModal(){openModal({title:'New project',save:'Create',body:`<div><label class="f-lbl2">Project name</label><input id="pn" class="f-in2" placeholder="e.g. Q3 Marketing"></div>`,onSave:async()=>{const n=document.getElementById('pn').value.trim();if(!n)return;const p={id:'proj-'+Date.now(),name:n};projects.push(p);byProj[p.id]=[];await cuProj(p);curProj=p.id;renderAll();save();closeModal()}})}
+
+// ─── Crop ─────────────────────────────────────────────────
+function openCropModal(src,cb){cropCallback=cb;cropX=0;cropY=0;cropZoom=1;const img=document.getElementById('crop-img');img.src=src;document.getElementById('crop-modal').classList.add('open');img.onload=()=>{const fit=Math.max(220/img.naturalWidth,220/img.naturalHeight)*1.05;cropZoom=fit;const zr=document.getElementById('crop-zoom');zr.min=fit*.5;zr.max=fit*4;zr.step=0.01;zr.value=fit;applyCropTransform()}}
+function closeCrop(){document.getElementById('crop-modal')?.classList.remove('open');cropCallback=null}
+function applyCropTransform(){cropZoom=parseFloat(document.getElementById('crop-zoom').value)||1;const img=document.getElementById('crop-img');img.style.left='50%';img.style.top='50%';img.style.transform=`translate(calc(-50% + ${cropX}px), calc(-50% + ${cropY}px)) scale(${cropZoom})`}
+function cropMouseDown(e){cropDragging=true;cropDS={x:e.clientX,y:e.clientY,ox:cropX,oy:cropY};e.preventDefault()}
+function cropTouchStart(e){const t=e.touches[0];cropDragging=true;cropDS={x:t.clientX,y:t.clientY,ox:cropX,oy:cropY}}
+function saveCrop(){const img=document.getElementById('crop-img'),container=document.getElementById('crop-container');const cr=container.getBoundingClientRect(),ir=img.getBoundingClientRect();const circleR=110,cx=cr.left+cr.width/2,cy=cr.top+cr.height/2;const canvas=document.createElement('canvas');canvas.width=220;canvas.height=220;const ctx=canvas.getContext('2d');ctx.beginPath();ctx.arc(110,110,110,0,Math.PI*2);ctx.clip();const sr=img.naturalWidth/ir.width,dx=(cx-circleR-ir.left)*sr,dy=(cy-circleR-ir.top)*sr,dw=circleR*2*sr;try{ctx.drawImage(img,dx,dy,dw,dw,0,0,220,220)}catch(e){ctx.fillStyle='#5B4FE8';ctx.fillRect(0,0,220,220)}const dataUrl=canvas.toDataURL('image/jpeg',.9);if(cropCallback)cropCallback(dataUrl);closeCrop()}
+
+// ─── Boot ─────────────────────────────────────────────────
+function loadState(){
+  try{
+    const r=localStorage.getItem(SK);if(!r)return;const s=JSON.parse(r);
+    projects=s.projects||projects;curProj=s.curProj||curProj;columns=s.columns||columns;byProj=s.byProj||byProj;
+    filters=s.filters||{};if(s.profile)profile={...profile,...s.profile};if(s.teamMembers)teamMembers=s.teamMembers;
+    if(s.wsName)wsName=s.wsName;if(s.wsPriority)wsPriority=s.wsPriority;if(s.trash)trash=s.trash;if(s.comments)comments=s.comments;
+    Object.keys(byProj).forEach(pid=>byProj[pid].forEach(t=>{if(!t.owners){t.owners=t.assignees||[];delete t.assignees}}));
+    const ac=columns.find(c=>c.id==='assignee'||c.id==='assignees'||c.id==='owner');if(ac){ac.id='owners';ac.label='Owner'}
+    // normalise column widths to numbers
+    columns.forEach(c=>{if(typeof c.width==='string')c.width=parseInt(c.width)||150});
+  }catch(_){}
+  updateTrashBadge();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  if(localStorage.getItem('signal_dark')==='1')toggleDark();
+  document.addEventListener('mousemove',e=>{if(!cropDragging)return;cropX=cropDS.ox+(e.clientX-cropDS.x);cropY=cropDS.oy+(e.clientY-cropDS.y);applyCropTransform()});
+  document.addEventListener('touchmove',e=>{if(!cropDragging)return;const t=e.touches[0];cropX=cropDS.ox+(t.clientX-cropDS.x);cropY=cropDS.oy+(t.clientY-cropDS.y);applyCropTransform()},{passive:true});
+  document.addEventListener('mouseup',()=>cropDragging=false);document.addEventListener('touchend',()=>cropDragging=false);
+  document.addEventListener('keydown',e=>{
+    const tag=document.activeElement?.tagName,inInput=tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT';
+    if(e.key==='Escape'){closeModal();closeCrop();menuFor=null;closeAllDD();hideParsePreview();document.querySelectorAll('.act-menu,.flt-menu,.a-dd').forEach(m=>m.remove());if(document.getElementById('app')?.classList.contains('visible'))scheduleRender();const si=document.getElementById('search-input');if(document.activeElement===si){si.value='';handleSearch('')}}
+    if(e.key==='Enter'&&['li-email','li-pw'].includes(document.activeElement?.id))doLogin();
+    if(inInput)return;
+    if(e.key==='n'||e.key==='N'){e.preventDefault();addTaskRow()}
+    if((e.key==='Delete'||e.key==='Backspace')&&selectedIds.size>0){e.preventDefault();bulkDelete()}
+    if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();doUndo()}
+    if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){e.preventDefault();doRedo()}
+    if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('cmd-ta')?.focus()}
+    if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('search-input')?.focus()}
+  });
+});
+</script>
+</body>
+</html>
