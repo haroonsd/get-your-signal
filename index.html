@@ -45,23 +45,10 @@ body{font-family:'Inter',sans-serif;color:var(--text-1);font-size:13px;line-heig
 .flatpickr-months{background:var(--brand)!important;border-radius:12px 12px 0 0!important;padding:10px 0!important}
 .flatpickr-month{color:#fff!important;fill:#fff!important}
 .flatpickr-current-month{color:#fff!important;font-size:14px!important;font-weight:600!important}
-.flatpickr-current-month .flatpickr-monthDropdown-months{
-  background:var(--brand)!important;color:#fff!important;
-  border:none!important;outline:none!important;
-  font-weight:600!important;font-size:14px!important;
-  -webkit-appearance:none;appearance:none;
-  padding:2px 4px!important;cursor:pointer
-}
-.flatpickr-current-month .flatpickr-monthDropdown-months:focus{outline:none!important}
-.flatpickr-current-month .flatpickr-monthDropdown-months option{
-  background:var(--surface)!important;
-  color:var(--text-1)!important;
-  font-weight:500!important;font-size:13px!important
-}
+.flatpickr-current-month .flatpickr-monthDropdown-months{background:var(--brand)!important;color:#fff!important;border:none!important;outline:none!important;font-weight:600!important;font-size:14px!important;-webkit-appearance:none;appearance:none;padding:2px 4px!important;cursor:pointer}
+.flatpickr-current-month .flatpickr-monthDropdown-months option{background:var(--surface)!important;color:var(--text-1)!important;font-weight:500!important;font-size:13px!important}
 .flatpickr-current-month input.cur-year{color:#fff!important;font-weight:600!important;font-size:14px!important}
-.flatpickr-current-month .arrowUp,.flatpickr-current-month .arrowDown{border-bottom-color:#fff!important;border-top-color:#fff!important}
 .flatpickr-prev-month,.flatpickr-next-month{fill:#fff!important;color:#fff!important;padding:8px!important}
-.flatpickr-prev-month:hover svg,.flatpickr-next-month:hover svg{fill:rgba(255,255,255,.7)!important}
 .flatpickr-weekdays{background:var(--surface-2)!important}
 span.flatpickr-weekday{color:var(--text-3)!important;font-weight:600!important;font-size:11px!important}
 .flatpickr-day{color:var(--text-1)!important;border-radius:8px!important;font-size:12px!important}
@@ -78,12 +65,11 @@ span.flatpickr-weekday{color:var(--text-3)!important;font-weight:600!important;f
 .date-pill.overdue{background:var(--red-bg);color:var(--red-text);border-color:var(--red)}
 .date-pill svg{width:11px;height:11px;flex-shrink:0}
 
-/* Dropdown — Monday.com style */
+/* Dropdown */
 @keyframes ddPop{from{opacity:0;transform:scale(.92) translateY(-6px)}to{opacity:1;transform:none}}
 .signal-dd{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-md);padding:8px;min-width:220px;animation:ddPop .15s cubic-bezier(.34,1.56,.64,1)}
 .dd-search{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-1);background:var(--surface-2);outline:none;margin-bottom:6px}
 .dd-search:focus{border-color:var(--brand);background:var(--surface)}
-.dd-search::placeholder{color:var(--text-3)}
 .signal-dd-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-2);transition:background .1s}
 .signal-dd-item:hover{background:var(--surface-2);color:var(--text-1)}
 .signal-dd-item.active{background:var(--brand-light)}
@@ -212,34 +198,31 @@ span.flatpickr-weekday{color:var(--text-3)!important;font-weight:600!important;f
 .stat-lbl{font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .stat-val{font-size:26px;font-weight:600;line-height:1}
 
-/* Done section at bottom */
-.done-section-row td{padding:0!important;border-right:none!important}
-.done-section-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-top:2px solid var(--border);background:var(--surface-2);user-select:none;transition:background .12s}
-.done-section-hdr:hover{background:var(--surface-3)}
-.done-section-hdr svg{transition:transform .2s ease;flex-shrink:0;color:var(--text-3)}
-.done-section-hdr.open svg{transform:rotate(90deg)}
-.done-section-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px}
-.done-count-pill{background:var(--surface-3);color:var(--text-3);font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px}
-/* Done rows — greyed, no colour */
-tbody tr.done-row td{opacity:.55}
-tbody tr.done-row .task-ta{text-decoration:line-through;color:var(--text-3)}
-tbody tr.done-row .sig-badge{background:var(--surface-3)!important;color:var(--text-3)!important}
-tbody tr.done-row .sig-badge .bdot{background:var(--text-3)!important}
-tbody tr.done-row .date-pill{background:var(--surface-2)!important;color:var(--text-3)!important;border-color:var(--border)!important}
-tbody tr.done-row .chip{background:var(--surface-3)!important;color:var(--text-3)!important}
+/* ── DONE SECTION ── */
+.done-divider-row td{padding:0!important;border:none!important}
+.done-divider{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;background:var(--surface-2);border-top:2px solid var(--border);border-bottom:1px solid var(--border);user-select:none;transition:background .12s}
+.done-divider:hover{background:var(--surface-3)}
+.done-chevron{width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:var(--text-3);transition:transform .2s ease;flex-shrink:0}
+.done-chevron.open{transform:rotate(90deg)}
+.done-divider-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px}
+.done-count-pill{background:var(--surface-3);color:var(--text-3);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:2px}
+/* Done rows styling */
+tr.done-row td{opacity:.55}
+tr.done-row .task-ta{text-decoration:line-through;color:var(--text-3)!important}
+tr.done-row .sig-badge{background:var(--surface-3)!important;color:var(--text-3)!important}
+tr.done-row .sig-badge .bdot{background:var(--text-3)!important}
+tr.done-row .date-pill{background:var(--surface-2)!important;color:var(--text-3)!important;border-color:var(--border)!important}
+tr.done-row .chip{background:var(--surface-3)!important;color:var(--text-3)!important}
 
 /* Table */
-.tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:visible}
-table{width:100%;border-collapse:collapse;min-width:max-content}
+.tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+table{width:100%;border-collapse:collapse}
 thead tr{background:var(--surface-2);border-bottom:2px solid var(--border)}
 th{padding:9px 12px;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;user-select:none;position:relative;border-right:1px solid var(--border)}
 th:last-child{border-right:none}
 .th-in{display:flex;align-items:center;gap:5px}
-.th-lbl{cursor:default}
-/* pencil always visible */
 .th-ed{font-size:11px;color:var(--text-3);cursor:pointer;padding:2px 5px;border-radius:3px;line-height:1}
 .th-ed:hover{color:var(--brand);background:var(--brand-light)}
-/* filter button — large and obvious */
 .th-flt{font-size:14px;cursor:pointer;padding:3px 6px;border-radius:5px;color:var(--text-3);background:var(--surface-3);border:1px solid var(--border);line-height:1;transition:all .12s}
 .th-flt:hover,.th-flt.on{color:var(--brand);background:var(--brand-light);border-color:var(--brand)}
 .th-flt.on{font-weight:700}
@@ -255,8 +238,6 @@ td{padding:0;border:none;border-right:1px solid var(--border);vertical-align:mid
 td:last-child{border-right:none}
 .cb-cell{width:36px;text-align:center;padding:0 8px!important;border-right:1px solid var(--border)!important}
 .row-cb{width:15px;height:15px;accent-color:var(--brand);cursor:pointer;display:block}
-
-/* Live dot in row */
 .live-cell{width:34px;padding:0 6px!important;text-align:center;border-right:1px solid var(--border)!important}
 .live-btn{background:none;border:none;cursor:pointer;padding:4px;border-radius:50%;display:flex;align-items:center;justify-content:center;width:26px;height:26px;margin:auto;transition:background .12s}
 .live-btn:hover{background:var(--brand-light)}
@@ -266,13 +247,10 @@ td:last-child{border-right:none}
 
 /* Task cell */
 .task-cell-wrap{display:flex;align-items:center;gap:6px;padding:6px 12px}
-/* Expand arrow — SVG, properly centred */
 .exp-btn{background:none;border:none;cursor:pointer;color:var(--text-3);padding:0;border-radius:3px;flex-shrink:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;transition:color .15s}
 .exp-btn svg{transition:transform .2s ease;display:block;flex-shrink:0}
 .exp-btn.open svg{transform:rotate(90deg)}
 .exp-btn:hover{color:var(--brand)}
-.exp-btn.no-subs{color:var(--border-strong)}
-.exp-btn.no-subs:hover{color:var(--brand)}
 .task-ta{flex:1;background:none;border:1px solid transparent;border-radius:var(--r-sm);padding:3px 6px;font-size:13px;font-weight:500;color:var(--text-1);font-family:inherit;outline:none;resize:none;overflow:hidden;min-height:28px;line-height:1.5;transition:border .12s,background .12s}
 .task-ta:hover{border-color:var(--border)}
 .task-ta:focus{border-color:var(--brand);background:var(--brand-light)}
@@ -297,17 +275,23 @@ td:last-child{border-right:none}
 .a-inp{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;font-family:inherit;outline:none;margin-bottom:4px;background:var(--surface);color:var(--text-1)}
 .a-inp:focus{border-color:var(--brand)}
 
-/* Subtasks — Monday.com style, column-aligned */
-.sub-section td{padding:0!important;border-right:none!important}
-.sub-tbody tr{border-bottom:1px solid var(--border);background:var(--surface-2)}
-.sub-tbody tr:hover{background:var(--surface-3)}
-.sub-tbody td{border-right:1px solid var(--border);vertical-align:middle;padding:0}
-.sub-tbody td:last-child{border-right:none}
-.sub-indent{width:54px;min-width:54px;padding:0!important;border-right:none!important;position:relative}
-.sub-indent::after{content:'';position:absolute;left:32px;top:0;bottom:0;width:1px;background:var(--border)}
-.sub-add-row td{padding:0!important;border-right:none!important;background:var(--surface-2);border-bottom:2px solid var(--border)}
-.sub-add-inline{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 54px;cursor:pointer;color:var(--text-3);font-size:12px;transition:background .12s}
-.sub-add-inline:hover{color:var(--brand);background:var(--brand-light)}
+/* ── SUBTASKS — fixed column alignment ── */
+.sub-section-row td{padding:0!important;border:none!important}
+.sub-table-wrap{background:var(--surface-2);border-bottom:2px solid var(--border)}
+/* The subtask table mirrors the EXACT same column structure as the parent */
+.sub-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.sub-table tr{border-bottom:1px solid var(--border)}
+.sub-table tr:last-child{border-bottom:none}
+.sub-table tr:hover{background:var(--surface-3)}
+.sub-table td{border-right:1px solid var(--border);vertical-align:middle;padding:0}
+.sub-table td:last-child{border-right:none}
+/* Indent cell overrides the cb-cell column */
+.sub-indent-cell{position:relative;padding:0!important}
+.sub-indent-line{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border)}
+.sub-add-row{cursor:pointer}
+.sub-add-row:hover{background:var(--brand-light)!important}
+.sub-add-inner{display:flex;align-items:center;gap:6px;padding:7px 12px 7px 8px;color:var(--text-3);font-size:12px;font-weight:500}
+.sub-add-row:hover .sub-add-inner{color:var(--brand)}
 
 /* Row actions */
 .act-cell{width:44px;padding:4px 8px!important}
@@ -430,13 +414,11 @@ td:last-child{border-right:none}
 #cmd-ta{flex:1;background:none;border:none;outline:none;font-size:13px;color:var(--text-1);font-family:inherit;padding:12px 4px;resize:none;overflow:hidden;min-height:48px;max-height:200px;line-height:1.6}
 #cmd-ta::placeholder{color:var(--text-3)}
 .cmd-hint{font-size:11px;color:var(--text-3);padding-bottom:10px;white-space:nowrap;flex-shrink:0;align-self:flex-end}
-/* Voice button */
 .cmd-voice{background:none;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--text-3);transition:all .12s;padding:0}
 .cmd-voice:hover{background:var(--surface-2);color:var(--brand)}
 .cmd-voice.listening{color:var(--red);background:var(--red-bg)}
 @keyframes voicePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 .cmd-voice.listening svg{animation:voicePulse .7s ease-in-out infinite}
-/* Send button — round like Claude */
 .cmd-send{background:var(--brand);color:#fff;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .12s,transform .12s;padding:0}
 .cmd-send:hover{background:var(--brand-dark);transform:scale(1.08)}
 .cmd-send:active{transform:scale(.95)}
@@ -635,7 +617,6 @@ td:last-child{border-right:none}
     </div>
 
     <div id="content">
-      <!-- TABLE VIEW -->
       <div class="view active" id="table-view" style="flex-direction:column">
         <div class="stats-row">
           <div class="stat-card"><div class="stat-lbl">Total</div><div class="stat-val" id="s-total">0</div></div>
@@ -645,9 +626,7 @@ td:last-child{border-right:none}
         </div>
         <div class="tbl-card"><div id="tbl"></div></div>
       </div>
-      <!-- BOARD VIEW -->
       <div class="view" id="board-view"></div>
-      <!-- LIVE VIEW -->
       <div class="view" id="live-view">
         <div class="live-hdr"><h2>Team live activity</h2><p>See what everyone is working on right now</p></div>
         <div class="live-my">
@@ -660,7 +639,6 @@ td:last-child{border-right:none}
         </div>
         <div class="live-grid" id="live-grid"></div>
       </div>
-      <!-- TRASH VIEW -->
       <div class="view" id="trash-view">
         <div class="trash-hdr">
           <div><h2 style="font-size:16px;font-weight:600">Trash</h2><p style="font-size:12px;color:var(--text-3);margin-top:2px">Deleted tasks are kept for 7 days</p></div>
@@ -732,23 +710,25 @@ const SB_URL='https://ocdrqmaalkuxplbpfnio.supabase.co';
 const SB_ANON='sb_publishable_Jnp-8tDyi3S_zXxF8ROUOg_-ot7rkdN';
 const SK='signal_v9';
 
-// ── State ──────────────────────────────────────────────────
 let sb=null;
 let projects=[{id:'proj-1',name:'General'}],curProj='proj-1';
 let columns=[
-  {id:'task',    label:'Task',    type:'text', required:true,  width:'300px'},
-  {id:'status',  label:'Status',  type:'list', required:true,  options:[{v:'todo',bg:'#F0F1F5',tc:'#5A5F72'},{v:'progress',bg:'#EFF6FF',tc:'#1E40AF'},{v:'waiting',bg:'#FFFBEB',tc:'#92400E'},{v:'done',bg:'#ECFDF5',tc:'#065F46'}], width:'140px'},
-  {id:'priority',label:'Priority',type:'list', required:true,  options:[{v:'low',bg:'#ECFDF5',tc:'#065F46'},{v:'medium',bg:'#FFFBEB',tc:'#92400E'},{v:'high',bg:'#FEF2F2',tc:'#991B1B'}], width:'130px'},
-  {id:'owners',  label:'Owner',   type:'multi',required:false, width:'200px'},
-  {id:'dueDate', label:'Due date',type:'date', required:false, width:'155px'},
+  {id:'task',    label:'Task',    type:'text', required:true,  width:300},
+  {id:'status',  label:'Status',  type:'list', required:true,  options:[{v:'todo',bg:'#F0F1F5',tc:'#5A5F72'},{v:'progress',bg:'#EFF6FF',tc:'#1E40AF'},{v:'waiting',bg:'#FFFBEB',tc:'#92400E'},{v:'done',bg:'#ECFDF5',tc:'#065F46'}], width:140},
+  {id:'priority',label:'Priority',type:'list', required:true,  options:[{v:'low',bg:'#ECFDF5',tc:'#065F46'},{v:'medium',bg:'#FFFBEB',tc:'#92400E'},{v:'high',bg:'#FEF2F2',tc:'#991B1B'}], width:130},
+  {id:'owners',  label:'Owner',   type:'multi',required:false, width:200},
+  {id:'dueDate', label:'Due date',type:'date', required:false, width:155},
 ];
+// Fixed pixel widths for special columns
+const W_CB=36,W_LIVE=34,W_ACT=44;
+
 let byProj={'proj-1':[]},filters={},expanded={},menuFor=null,menuPos={x:0,y:0};
 let colDragSrc=null,rowDragSrc=null,bDragSrc=null;
 let curView='table',sbOpen=true,myLiveTask=null;
 let profile={name:'Haroon Siddiqui',email:'haroon.siddiqui@wdna.ca',photo:null,role:'Admin'};
 let teamMembers=[],wsName='WDNA Retail Team',wsPriority='medium';
 let selectedIds=new Set(),searchQuery='';
-let darkMode=false,showDone=false;
+let darkMode=false,doneExpanded=false;
 let undoStack=[],redoStack=[];
 let trash=[],comments={};
 let notifPerm=false;
@@ -757,7 +737,6 @@ let cropCallback=null,cropX=0,cropY=0,cropZoom=1,cropDragging=false,cropDS={x:0,
 let openDD=null;
 const fpInstances={};
 
-// ── Helpers ───────────────────────────────────────────────
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
 const GT=()=>(byProj[curProj]||(byProj[curProj]=[]));
 const tod=()=>new Date().toISOString().split('T')[0];
@@ -768,6 +747,7 @@ const fdate=d=>{if(!d)return'';const di=Math.round((new Date(d)-new Date())/8640
 const save=()=>{
   const cutoff=Date.now()-7*24*60*60*1000;
   trash=trash.filter(t=>t.deletedAt>cutoff);
+  // Persist column widths as numbers
   localStorage.setItem(SK,JSON.stringify({projects,curProj,columns,byProj,filters,profile,teamMembers,wsName,wsPriority,trash,comments}));
   updateTrashBadge();
 };
@@ -787,16 +767,17 @@ function normTask(t={}){
 }
 function autoGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,200)+'px'}
 
-// ── Show/hide done ────────────────────────────────────────
-let doneExpanded=false;
-function toggleDoneSection(){
-  doneExpanded=!doneExpanded;
-  renderTable(); // re-render to show/hide done rows
-}
-function updateDoneCount(){
-  const n=GT().filter(t=>t.status==='done').length;
-  const el=document.getElementById('done-count-pill');
-  if(el)el.textContent=n;
+// ── Column width helpers ───────────────────────────────────
+// Columns store width as a number (pixels). Legacy string values are migrated on load.
+function colW(c){return typeof c.width==='number'?c.width:parseInt(c.width)||160}
+
+// Build a <colgroup> that exactly matches the main table's column structure
+// cb | live | ...data cols... | act
+function buildColgroup(){
+  const cols=`<col style="width:${W_CB}px;min-width:${W_CB}px"><col style="width:${W_LIVE}px;min-width:${W_LIVE}px">`
+    +columns.map(c=>`<col style="width:${colW(c)}px;min-width:${colW(c)}px">`).join('')
+    +`<col style="width:${W_ACT}px;min-width:${W_ACT}px">`;
+  return`<colgroup>${cols}</colgroup>`;
 }
 
 // ── Undo/Redo ─────────────────────────────────────────────
@@ -890,14 +871,8 @@ function updProfile(){
   const lu=document.getElementById('live-uname');if(lu)lu.textContent=profile.name||'You';
   const lav=document.getElementById('live-av');if(lav)lav.innerHTML=avHTML(profile.photo,profile.name);
 }
-async function saveProfileRemote(){
-  if(!sb)return;
-  try{await sb.from('profiles').upsert({id:profile.email,name:profile.name,email:profile.email,photo:profile.photo,role:profile.role},{onConflict:'id'})}catch(e){}
-}
-async function loadProfileRemote(){
-  if(!sb)return;
-  try{const{data}=await sb.from('profiles').select('*').eq('id',profile.email).single();if(data){profile.name=data.name||profile.name;profile.photo=data.photo||profile.photo;profile.role=data.role||profile.role;updProfile()}}catch(e){}
-}
+async function saveProfileRemote(){if(!sb)return;try{await sb.from('profiles').upsert({id:profile.email,name:profile.name,email:profile.email,photo:profile.photo,role:profile.role},{onConflict:'id'})}catch(e){}}
+async function loadProfileRemote(){if(!sb)return;try{const{data}=await sb.from('profiles').select('*').eq('id',profile.email).single();if(data){profile.name=data.name||profile.name;profile.photo=data.photo||profile.photo;profile.role=data.role||profile.role;updProfile()}}catch(e){}}
 
 // ── Sidebar / view ────────────────────────────────────────
 function toggleSidebar(){sbOpen=!sbOpen;document.getElementById('sidebar').classList.toggle('collapsed',!sbOpen);document.getElementById('cmd-bar').style.left=sbOpen?'var(--sw)':'0'}
@@ -967,7 +942,7 @@ function scheduleRender(){
 }
 
 // ── Projects ──────────────────────────────────────────────
-function renderAll(){renderProjects();renderTable();updateStats();updateDoneCount();if(curView==='board')renderBoard();if(curView==='live')renderLive();if(curView==='trash')renderTrash()}
+function renderAll(){renderProjects();renderTable();updateStats();if(curView==='board')renderBoard();if(curView==='live')renderLive();if(curView==='trash')renderTrash()}
 function renderProjects(){
   const el=document.getElementById('project-list');if(!el)return;
   el.innerHTML=projects.map(p=>`<div class="proj-row"><button class="proj-btn ${p.id===curProj&&curView!=='live'&&curView!=='trash'?'active':''}" onclick="goProj('${p.id}')"><span class="nav-dot"></span>${esc(p.name)}</button><button class="proj-more" onclick="openProjOpts('${p.id}',event)">···</button></div>`).join('');
@@ -996,7 +971,7 @@ function showListDD(tid,colId,val,col,anchorEl){
   const rect=anchorEl.getBoundingClientRect();
   const dd=document.createElement('div');dd.className='signal-dd';
   dd.innerHTML=(col.options||[]).map(o=>`
-    <div class="signal-dd-item ${o.v===val?'active':''}" onclick="listDDSelect(${tid},'${colId}','${o.v}')">
+    <div class="signal-dd-item ${o.v===val?'active':''}" onclick="listDDSelect(${JSON.stringify(tid)},'${colId}','${o.v}')">
       <span class="dd-label-pill" style="background:${o.bg};color:${o.tc}">
         <span class="dd-swatch" style="background:${o.tc}"></span>${esc(o.v)}
       </span>
@@ -1010,27 +985,20 @@ function showListDD(tid,colId,val,col,anchorEl){
 }
 async function listDDSelect(tid,colId,val){
   closeAllDD();
-  // Handle subtask IDs (format: "sub_taskId_subtaskId")
-  if(String(tid).startsWith('sub_')){
-    const parts=String(tid).split('_');
-    const parentId=parseInt(parts[1]),subId=parseInt(parts[2]);
+  // Subtask IDs are objects: {parentId, subId}
+  if(tid&&typeof tid==='object'&&tid.subId!==undefined){
+    const{parentId,subId}=tid;
     const t=GT().find(x=>x.id===parentId);if(!t)return;
     const s=t.subtasks.find(x=>x.id===subId);if(!s)return;
     s[colId]=val;if(colId==='status'&&val==='done')s.done=true;
-    // Update badge in place
-    const uid=colId==='status'?`subbadge-s-${parentId}-${subId}`:`subbadge-p-${parentId}-${subId}`;
-    const col=columns.find(c=>c.id===colId);
-    const{bg,tc}=listStyle(col,val);
-    const el=document.getElementById(uid);
-    if(el){el.style.background=bg;el.style.color=tc;el.textContent=val;el.setAttribute('onclick',`showListDD('sub_${parentId}_${subId}','${colId}','${val}',columns.find(c=>c.id==='${colId}'),document.getElementById('${uid}'))`);}
     renderTable();save();await cuTask(t);return;
   }
   const t=GT().find(x=>x.id===tid);if(!t)return;
   const prev=t[colId];if(prev===val)return;
   pushUndo({type:'edit',id:tid,key:colId,prev,next:val});
-  t[colId]=val;updateStats();updateDoneCount();save();cuTask(t);
+  t[colId]=val;updateStats();save();cuTask(t);
   if(curView==='board'){renderBoard();return}
-  // Targeted badge swap
+  // targeted badge swap
   const uid=`badge-${tid}-${colId}`;
   const col=columns.find(c=>c.id===colId);
   const{bg,tc}=listStyle(col,val);
@@ -1038,27 +1006,24 @@ async function listDDSelect(tid,colId,val){
   if(el){
     el.style.background=bg;el.style.color=tc;
     el.innerHTML=`<span class="bdot" style="background:${tc}"></span>${esc(val)}`;
-    el.setAttribute('onclick',`showListDD(${tid},'${colId}','${val}',columns.find(c=>c.id==='${colId}'),document.getElementById('${uid}'))`);
     el.classList.remove('done-flash');void el.offsetWidth;el.classList.add('done-flash');
     setTimeout(()=>el.classList.remove('done-flash'),600);
   }
   if(colId==='status'){
-    const row=document.querySelector(`tr[data-tid="${tid}"]`);
-    if(row){row.classList.toggle('od-row',isOD(t.dueDate,val));row.classList.toggle('live-row',myLiveTask===t.task)}
     if(val==='done'){
       confetti();
       if((t.owners||[]).length>0)notifyCompleted(t.task,profile.name);
-      // Slide row out then re-render to move it to done section
       const row=document.querySelector(`tr[data-tid="${tid}"]`);
       if(row){row.style.transition='opacity .35s,transform .35s';row.style.opacity='0';row.style.transform='translateX(16px)';setTimeout(()=>renderTable(),360)}
+    } else {
+      scheduleRender();
     }
   }
 }
 function listStyle(col,val){const o=(col?.options||[]).find(x=>x.v===val);return o?{bg:o.bg,tc:o.tc}:{bg:'var(--surface-3)',tc:'var(--text-2)'}}
 function renderListBadge(tid,colId,val,col){
   const{bg,tc}=listStyle(col,val);const uid=`badge-${tid}-${colId}`;
-  const isStatus=colId==='status';
-  return`<div style="padding:6px 12px"><button class="sig-badge ${isStatus?'status-badge':''}" id="${uid}" style="background:${bg};color:${tc}" onclick="showListDD(${tid},'${colId}','${val}',columns.find(c=>c.id==='${colId}'),document.getElementById('${uid}'))"><span class="bdot" style="background:${tc}"></span>${esc(val)}</button></div>`;
+  return`<div style="padding:6px 12px"><button class="sig-badge" id="${uid}" style="background:${bg};color:${tc}" onclick="showListDD(${tid},'${colId}','${val}',columns.find(c=>c.id==='${colId}'),document.getElementById('${uid}'))"><span class="bdot" style="background:${tc}"></span>${esc(val)}</button></div>`;
 }
 
 // ── Flatpickr ─────────────────────────────────────────────
@@ -1099,7 +1064,7 @@ async function toggleOwner(tid,name){const t=GT().find(x=>x.id===tid);if(!t)retu
 async function rmOwner(tid,name){const t=GT().find(x=>x.id===tid);if(!t)return;t.owners=(t.owners||[]).filter(x=>x!==name);renderTable();save();await cuTask(t)}
 async function addOwnerCustom(tid,name){name=name.trim();if(!name)return;const t=GT().find(x=>x.id===tid);if(!t)return;t.owners=t.owners||[];if(!t.owners.includes(name))t.owners.push(name);renderTable();save();await cuTask(t)}
 
-// ── Table ─────────────────────────────────────────────────
+// ── TABLE ─────────────────────────────────────────────────
 function applyF(tasks){return tasks.filter(t=>Object.entries(filters).every(([k,v])=>!v?.length||v.includes(String(t[k]||''))))}
 
 function renderCell(t,c){
@@ -1117,6 +1082,7 @@ function renderCell(t,c){
   return`<div style="padding:6px 12px"><input class="cell-in" value="${esc(v)}" onchange="updCell(${t.id},'${c.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>`;
 }
 
+// ── SUBTASKS — columns perfectly aligned with parent ──────
 function renderSubtasks(t){
   const statusCol=columns.find(c=>c.id==='status');
   const priorityCol=columns.find(c=>c.id==='priority');
@@ -1124,48 +1090,56 @@ function renderSubtasks(t){
   const subRows=(t.subtasks||[]).map(s=>{
     const{bg:sbg,tc:stc}=listStyle(statusCol,s.status||'todo');
     const{bg:pbg,tc:ptc}=listStyle(priorityCol,s.priority||'medium');
+    // Use object IDs for subtask badge clicks to avoid string parsing
+    const subTidObj=JSON.stringify({parentId:t.id,subId:s.id});
     const sidS=`subbadge-s-${t.id}-${s.id}`;
     const sidP=`subbadge-p-${t.id}-${s.id}`;
     const ownerChips=(s.owners||[]).map(a=>`<span class="chip" style="font-size:10px;padding:1px 7px 1px 4px"><span class="chip-av" style="width:14px;height:14px;font-size:7px">${a[0].toUpperCase()}</span>${esc(a)}<button class="chip-del" onclick="rmSubOwner(${t.id},${s.id},'${esc(a)}')">×</button></span>`).join('');
 
-    const cells=columns.map(c=>{
-      if(c.id==='task')return`<td style="min-width:${c.width}"><div style="display:flex;align-items:center;gap:6px;padding:5px 8px;padding-left:14px">
+    // Each subtask row matches EXACTLY: cb-cell | live-cell | ...data cols... | act-cell
+    const dataCells=columns.map(c=>{
+      if(c.id==='task')return`<td><div style="display:flex;align-items:center;gap:6px;padding:5px 8px;padding-left:10px">
         <input type="checkbox" ${s.done?'checked':''} onchange="togSub(${t.id},${s.id})" style="width:14px;height:14px;accent-color:var(--brand);flex-shrink:0;cursor:pointer">
         <input style="flex:1;background:none;border:1px solid transparent;border-radius:4px;padding:2px 6px;font-size:12px;color:var(--text-1);font-family:inherit;outline:none;min-width:0;${s.done?'text-decoration:line-through;opacity:.5':''}" value="${esc(s.title)}" placeholder="Subtask name" onchange="editSub(${t.id},${s.id},this.value)" onkeydown="if(event.key==='Enter')this.blur()" onfocus="this.style.borderColor='var(--brand)';this.style.background='var(--brand-light)'" onblur="this.style.borderColor='transparent';this.style.background='none'">
         <button style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:11px;padding:2px 4px;border-radius:3px;flex-shrink:0;transition:color .1s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-3)'" onclick="delSub(${t.id},${s.id})">✕</button>
       </div></td>`;
-      if(c.id==='status')return`<td style="min-width:${c.width}"><div style="padding:5px 12px"><button class="sig-badge" id="${sidS}" style="background:${sbg};color:${stc}" onclick="showListDD('sub_${t.id}_${s.id}','status','${s.status||'todo'}',columns.find(c=>c.id==='status'),document.getElementById('${sidS}'))"><span class="bdot" style="background:${stc}"></span>${s.status||'todo'}</button></div></td>`;
-      if(c.id==='priority')return`<td style="min-width:${c.width}"><div style="padding:5px 12px"><button class="sig-badge" id="${sidP}" style="background:${pbg};color:${ptc}" onclick="showListDD('sub_${t.id}_${s.id}','priority','${s.priority||'medium'}',columns.find(c=>c.id==='priority'),document.getElementById('${sidP}'))"><span class="bdot" style="background:${ptc}"></span>${s.priority||'medium'}</button></div></td>`;
-      if(c.id==='owners')return`<td style="min-width:${c.width}"><div class="assignee-cell">${ownerChips}<button class="chip-add" style="font-size:10px;padding:1px 7px" onclick="openSubOwnerDD(${t.id},${s.id},this)">+ Add</button></div></td>`;
-      if(c.id==='dueDate')return`<td style="min-width:${c.width}"><div style="padding:5px 12px;font-size:12px;color:var(--text-3)">${fdate(s.dueDate)||'—'}</div></td>`;
-      return`<td style="min-width:${c.width}"></td>`;
+      if(c.id==='status')return`<td><div style="padding:5px 12px"><button class="sig-badge" id="${sidS}" style="background:${sbg};color:${stc}" onclick="showListDD(${subTidObj},'status','${s.status||'todo'}',columns.find(c=>c.id==='status'),document.getElementById('${sidS}'))"><span class="bdot" style="background:${stc}"></span>${s.status||'todo'}</button></div></td>`;
+      if(c.id==='priority')return`<td><div style="padding:5px 12px"><button class="sig-badge" id="${sidP}" style="background:${pbg};color:${ptc}" onclick="showListDD(${subTidObj},'priority','${s.priority||'medium'}',columns.find(c=>c.id==='priority'),document.getElementById('${sidP}'))"><span class="bdot" style="background:${ptc}"></span>${s.priority||'medium'}</button></div></td>`;
+      if(c.id==='owners')return`<td><div class="assignee-cell">${ownerChips}<button class="chip-add" style="font-size:10px;padding:1px 7px" onclick="openSubOwnerDD(${t.id},${s.id},this)">+ Add</button></div></td>`;
+      if(c.id==='dueDate')return`<td><div style="padding:5px 12px;font-size:12px;color:var(--text-3)">${fdate(s.dueDate)||'—'}</div></td>`;
+      return`<td></td>`;
     }).join('');
 
-    return`<tr class="sub-tr">
-      <td style="width:36px;min-width:36px;text-align:center;padding:0 8px!important;border-right:1px solid var(--border)!important"></td>
-      <td style="width:34px;min-width:34px;border-right:1px solid var(--border)!important;position:relative">
-        <div style="width:1px;height:100%;background:var(--border);margin:0 auto"></div>
+    return`<tr style="background:var(--surface-2)">
+      <td class="cb-cell" style="background:var(--surface-2)"></td>
+      <td class="live-cell" style="background:var(--surface-2);position:relative">
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border);transform:translateX(-50%)"></div>
       </td>
-      ${cells}
-      <td style="width:44px"></td>
+      ${dataCells}
+      <td class="act-cell" style="background:var(--surface-2)"></td>
     </tr>`;
   }).join('');
 
-  const addSubRow=`<tr class="sub-add-tr">
-    <td style="width:36px;border-right:1px solid var(--border)"></td>
-    <td style="width:34px;border-right:1px solid var(--border)"></td>
-    <td colspan="${columns.length}" style="padding:0"><div class="sub-add-inline" onclick="addSub(${t.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add subtask</div></td>
-    <td style="width:44px"></td>
+  // "Add subtask" row — same structure
+  const addRow=`<tr class="sub-add-row" onclick="addSub(${t.id})" style="background:var(--surface-2)">
+    <td class="cb-cell" style="background:var(--surface-2)"></td>
+    <td class="live-cell" style="background:var(--surface-2)"></td>
+    <td colspan="${columns.length}" style="padding:0">
+      <div class="sub-add-inner">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add subtask
+      </div>
+    </td>
+    <td class="act-cell" style="background:var(--surface-2)"></td>
   </tr>`;
 
-  // Colgroup mirrors parent exactly: cb(36) + live(34) + each column + act(44)
-  const cg=`<colgroup><col style="width:36px"><col style="width:34px">${columns.map(c=>`<col style="min-width:${c.width}">`).join('')}<col style="width:44px"></colgroup>`;
-
-  return`<tr class="sub-section"><td colspan="${columns.length+4}" style="padding:0!important;border:none!important">
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed">${cg}<tbody>${subRows}${addSubRow}</tbody></table>
+  // Wrap in a tr > td that spans ALL columns, containing a table that shares the same colgroup
+  return`<tr class="sub-section-row"><td colspan="${columns.length+3}" style="padding:0;border:none">
+    <div class="sub-table-wrap">
+      <table class="sub-table">${buildColgroup()}<tbody>${subRows}${addRow}</tbody></table>
+    </div>
   </td></tr>`;
 }
-async function cycleSubStatus(tid,sid){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;const opts=['todo','progress','waiting','done'];s.status=opts[(opts.indexOf(s.status||'todo')+1)%opts.length];if(s.status==='done')s.done=true;renderTable();save();await cuTask(t)}
 
 // Subtask owner
 function openSubOwnerDD(tid,sid,btn){
@@ -1200,69 +1174,94 @@ async function toggleSubOwner(tid,sid,name){
 async function rmSubOwner(tid,sid,name){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;s.owners=(s.owners||[]).filter(x=>x!==name);renderTable();save();await cuTask(t)}
 async function addSubOwnerCustom(tid,sid,name){name=name.trim();if(!name)return;const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;s.owners=s.owners||[];if(!s.owners.includes(name))s.owners.push(name);renderTable();save();await cuTask(t)}
 
-function renderRow(t,i,arr,extraClass=''){
+// ── Render row ────────────────────────────────────────────
+function renderRow(t,extraClass=''){
   const od=isOD(t.dueDate,t.status),isLive=myLiveTask===t.task&&myLiveTask!==null,isSel=selectedIds.has(t.id);
   const cells=columns.map(c=>`<td>${renderCell(t,c)}</td>`).join('');
-  return`<tr class="${od?'od-row':''} ${isLive?'live-row':''} ${isSel?'selected-row':''} ${extraClass}" data-tid="${t.id}" draggable="true" ondragstart="rDS(event,${t.id})" ondragover="rDO(event)" ondragleave="rDL(event)" ondrop="rDD(event,${t.id})">
+  const rowHtml=`<tr class="${od?'od-row':''} ${isLive?'live-row':''} ${isSel?'selected-row':''} ${extraClass}" data-tid="${t.id}" draggable="true" ondragstart="rDS(event,${t.id})" ondragover="rDO(event)" ondragleave="rDL(event)" ondrop="rDD(event,${t.id})">
     <td class="cb-cell"><input type="checkbox" class="row-cb" ${isSel?'checked':''} onchange="toggleSelect(${t.id},this.checked)"></td>
     <td class="live-cell"><button class="live-btn ${isLive?'is-live':''}" onclick="setLiveTask(${t.id})" title="${isLive?'Live — click to unset':'Set as live task'}"><span class="row-live-dot"></span></button></td>
     ${cells}
     <td class="act-cell"><div class="amw"><button class="act-btn" onclick="togMenu(${t.id},event)">⋯</button></div></td>
-  </tr>${expanded[t.id]?renderSubtasks(t):''}`;
+  </tr>`;
+  return rowHtml + (expanded[t.id]?renderSubtasks(t):'');
 }
 
+// Column drag
 function colDS(e,id){colDragSrc=id;setTimeout(()=>e.currentTarget.classList.add('col-drag'),0);e.dataTransfer.effectAllowed='move'}
 function colDO(e,id){e.preventDefault();if(colDragSrc&&colDragSrc!==id){document.querySelectorAll('th.col-over').forEach(x=>x.classList.remove('col-over'));e.currentTarget.classList.add('col-over')}}
 function colDL(e){e.currentTarget.classList.remove('col-over')}
 function colDE(e){e.currentTarget.classList.remove('col-drag');document.querySelectorAll('th.col-over').forEach(x=>x.classList.remove('col-over'))}
 function colDrop(e,tid){e.preventDefault();e.currentTarget.classList.remove('col-over');if(!colDragSrc||colDragSrc===tid)return;const si=columns.findIndex(c=>c.id===colDragSrc),ti=columns.findIndex(c=>c.id===tid);if(si<0||ti<0)return;const[m]=columns.splice(si,1);columns.splice(ti,0,m);colDragSrc=null;renderTable();save()}
 
+// ── MAIN renderTable ──────────────────────────────────────
 function renderTable(){
-  // Filter: hide done unless showDone is on
-  let tasks=applyF(GT()).filter(t=>showDone||t.status!=='done');
-  const vis=tasks.filter(t=>!searchQuery||t.task.toLowerCase().includes(searchQuery));
-  const allSel=vis.length>0&&vis.every(t=>selectedIds.has(t.id));
-  const someSel=vis.some(t=>selectedIds.has(t.id));
+  const allTasks=applyF(GT());
+  const activeTasks=allTasks.filter(t=>t.status!=='done');
+  const doneTasks=allTasks.filter(t=>t.status==='done');
+
+  const visTasks=activeTasks.filter(t=>!searchQuery||t.task.toLowerCase().includes(searchQuery));
+  const allSel=visTasks.length>0&&visTasks.every(t=>selectedIds.has(t.id));
+  const someSel=visTasks.some(t=>selectedIds.has(t.id));
 
   const ths=columns.map(c=>{
     const hf=Boolean(filters[c.id]?.length);
-    return`<th draggable="true" style="min-width:${c.width};cursor:grab" ondragstart="colDS(event,'${c.id}')" ondragover="colDO(event,'${c.id}')" ondragleave="colDL(event)" ondrop="colDrop(event,'${c.id}')" ondragend="colDE(event)">
+    return`<th draggable="true" ondragstart="colDS(event,'${c.id}')" ondragover="colDO(event,'${c.id}')" ondragleave="colDL(event)" ondrop="colDrop(event,'${c.id}')" ondragend="colDE(event)">
       <div class="th-in">
         <span style="font-size:11px;color:var(--border-strong)">⠿</span>
-        <span class="th-lbl">${esc(c.label)}</span>
+        <span style="cursor:default">${esc(c.label)}</span>
         <span class="th-ed" onclick="openColEd('${c.id}')">✎</span>
         <span class="th-flt ${hf?'on':''}" onclick="togFlt('${c.id}',event)">▾</span>
       </div>
     </th>`;
   }).join('');
 
-  // Add task row at TOP
-  const addRow=`<tr class="add-task-row"><td colspan="${columns.length+4}"><div class="add-task-inline" onclick="addTaskRow()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add task</div></td></tr>`;
+  // Add task inline row
+  const addRow=`<tr class="add-task-row"><td colspan="${columns.length+3}"><div class="add-task-inline" onclick="addTaskRow()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add task</div></td></tr>`;
 
-  let rows='';
-  if(tasks.length===0){
-    rows=`<tr><td colspan="${columns.length+4}"><div class="empty-state">
+  // Active task rows
+  let activeRows='';
+  if(activeTasks.length===0&&doneTasks.length===0){
+    activeRows=`<tr><td colspan="${columns.length+3}"><div class="empty-state">
       <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="7" y1="13" x2="17" y2="13" stroke-width="1.5"/><line x1="7" y1="16" x2="14" y2="16" stroke-width="1.5"/></svg>
       <h3>No tasks yet</h3>
       <p>Paste your daily agenda below ↓ or click <strong>New task</strong> to get started</p>
     </div></td></tr>`;
-  }else{
-    rows=tasks.map((t,i,a)=>renderRow(t,i,a)).join('');
+  } else {
+    activeRows=activeTasks.map(t=>renderRow(t)).join('');
+  }
+
+  // Done section
+  let doneSection='';
+  if(doneTasks.length>0){
+    const chevron=doneExpanded?'open':'';
+    const doneRows=doneExpanded
+      ? doneTasks.map(t=>renderRow(t,'done-row')).join('')
+      : '';
+    doneSection=`<tr class="done-divider-row"><td colspan="${columns.length+3}" style="padding:0">
+      <div class="done-divider" onclick="toggleDoneSection()">
+        <span class="done-chevron ${chevron}">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,1 8,5 2,9"/></svg>
+        </span>
+        <span class="done-divider-label">Completed</span>
+        <span class="done-count-pill">${doneTasks.length}</span>
+      </div>
+    </td></tr>${doneRows}`;
   }
 
   const el=document.getElementById('tbl');if(!el)return;
-  el.innerHTML=`<table><thead><tr>
+  el.innerHTML=`<table>${buildColgroup()}<thead><tr>
     <th class="cb-cell"><input type="checkbox" style="width:15px;height:15px;accent-color:var(--brand);cursor:pointer;display:block" ${allSel?'checked':''} onchange="toggleSelectAll(this.checked)" id="sa-cb"></th>
     <th class="live-cell"></th>
     ${ths}
     <th><button class="add-col-btn" onclick="openColCreate()">+</button></th>
-  </tr></thead><tbody>${addRow}${rows}</tbody></table>`;
+  </tr></thead><tbody>${addRow}${activeRows}${doneSection}</tbody></table>`;
 
   const cb=document.getElementById('sa-cb');if(cb)cb.indeterminate=someSel&&!allSel;
 
-  // Re-attach floating menu
+  // Floating row menu
   if(menuFor!==null){
-    const arr=applyF(GT()).filter(t=>showDone||t.status!=='done');
+    const arr=applyF(GT()).filter(t=>t.status!=='done');
     const idx=arr.findIndex(t=>t.id===menuFor);
     const menu=document.createElement('div');menu.className='act-menu';
     menu.innerHTML=`<button class="act-item" onclick="moveRow(${menuFor},-1)" ${idx<=0?'disabled':''}>↑ Move up</button><button class="act-item" onclick="moveRow(${menuFor},1)" ${idx>=arr.length-1?'disabled':''}>↓ Move down</button><div class="msep"></div><button class="act-item" onclick="openSidePanel(${menuFor});menuFor=null;document.querySelectorAll('.act-menu').forEach(m=>m.remove())">Open detail</button><button class="act-item" onclick="dupTask(${menuFor})">Duplicate</button><button class="act-item" onclick="addSub(${menuFor})">Add subtask</button><div class="msep"></div><button class="act-item danger" onclick="delTask(${menuFor})">Delete</button>`;
@@ -1273,18 +1272,20 @@ function renderTable(){
   setTimeout(()=>{document.querySelectorAll('.task-ta').forEach(ta=>autoGrow(ta));applySearchHighlight()},0);
 }
 
-// Live task — only ONE at a time
+function toggleDoneSection(){doneExpanded=!doneExpanded;renderTable()}
+
+// Live task
 function setLiveTask(tid){
   const t=GT().find(x=>x.id===tid);if(!t)return;
   if(myLiveTask===t.task){
     myLiveTask=null;
     const lt=document.getElementById('live-task-txt');if(lt){lt.textContent='Not working on anything specific';lt.className='live-task-txt'}
   }else{
-    myLiveTask=t.task; // only one live task — replaces previous
+    myLiveTask=t.task;
     const lt=document.getElementById('live-task-txt');if(lt){lt.textContent=t.task;lt.className='live-task-txt set'}
     toast('● Now live: '+t.task);
   }
-  renderTable(); // re-render all rows so old live dot clears and new one lights up
+  renderTable();
 }
 
 // Row drag
@@ -1292,16 +1293,16 @@ function rDS(e,id){rowDragSrc=id;e.currentTarget.classList.add('dragging');e.dat
 function rDO(e){e.preventDefault();e.currentTarget.classList.add('drag-over')}
 function rDL(e){e.currentTarget.classList.remove('drag-over')}
 function rDD(e,tid){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(!rowDragSrc||rowDragSrc===tid)return;const arr=GT(),si=arr.findIndex(t=>t.id===rowDragSrc),ti=arr.findIndex(t=>t.id===tid);if(si<0||ti<0)return;const[m]=arr.splice(si,1);arr.splice(ti,0,m);rowDragSrc=null;renderTable();save();arr.forEach(t=>cuTask(t))}
-function moveRow(id,dir){menuFor=null;const arr=GT(),i=arr.findIndex(t=>t.id===id),ni=i+dir;if(ni<0||ni>=arr.length)return;[arr[i],arr[ni]]=[arr[ni],arr[i]];renderTable();save()}
+function moveRow(id,dir){menuFor=null;const arr=GT().filter(t=>t.status!=='done'),i=arr.findIndex(t=>t.id===id),ni=i+dir;if(ni<0||ni>=arr.length)return;const allArr=GT(),ai=allArr.findIndex(t=>t.id===arr[i].id),ani=allArr.findIndex(t=>t.id===arr[ni].id);[allArr[ai],allArr[ani]]=[allArr[ani],allArr[ai]];renderTable();save()}
 
 // Search
 function handleSearch(q){searchQuery=q.trim().toLowerCase();const sc=document.getElementById('search-clear');if(sc)sc.classList.toggle('show',q.length>0);applySearchHighlight()}
 function clearSearch(){const si=document.getElementById('search-input');if(si)si.value='';searchQuery='';document.getElementById('search-clear')?.classList.remove('show');applySearchHighlight()}
-function applySearchHighlight(){document.querySelectorAll('#tbl tbody tr').forEach(row=>{if(!searchQuery){row.classList.remove('search-hidden');return}row.classList.toggle('search-hidden',!row.textContent.toLowerCase().includes(searchQuery))})}
+function applySearchHighlight(){document.querySelectorAll('#tbl tbody tr[data-tid]').forEach(row=>{if(!searchQuery){row.style.display='';return}row.style.display=row.textContent.toLowerCase().includes(searchQuery)?'':'none'})}
 
 // Selection
 function toggleSelect(id,checked){if(checked)selectedIds.add(id);else selectedIds.delete(id);updBulkBar();document.querySelector(`tr[data-tid="${id}"]`)?.classList.toggle('selected-row',checked)}
-function toggleSelectAll(checked){const vis=applyF(GT()).filter(t=>(showDone||t.status!=='done')&&(!searchQuery||t.task.toLowerCase().includes(searchQuery)));vis.forEach(t=>checked?selectedIds.add(t.id):selectedIds.delete(t.id));renderTable();updBulkBar()}
+function toggleSelectAll(checked){const vis=applyF(GT()).filter(t=>t.status!=='done'&&(!searchQuery||t.task.toLowerCase().includes(searchQuery)));vis.forEach(t=>checked?selectedIds.add(t.id):selectedIds.delete(t.id));renderTable();updBulkBar()}
 function updBulkBar(){const n=selectedIds.size;const bar=document.getElementById('bulk-bar');if(!bar)return;if(n>0){bar.classList.add('show');const bc=document.getElementById('bulk-count');if(bc)bc.textContent=n+' selected'}else bar.classList.remove('show')}
 function clearSelection(){selectedIds.clear();updBulkBar();renderTable()}
 async function bulkStatus(status){const ids=[...selectedIds];for(const id of ids)await updCell(id,'status',status);toast(ids.length+' tasks updated');clearSelection()}
@@ -1318,7 +1319,7 @@ async function addTaskRow(title=''){
   const t=normTask({task:title||'New task'});
   GT().unshift(t);pushUndo({type:'add',task:{...t},projId:curProj});
   if(curView!=='table')switchView('table');
-  renderTable();updateStats();updateDoneCount();save();await cuTask(t);
+  renderTable();updateStats();save();await cuTask(t);
   if(title)toast('Task added');
   setTimeout(()=>{const ta=document.querySelector('#tbl tbody tr:nth-child(2) .task-ta');if(ta){ta.focus();ta.select()}},50);
 }
@@ -1336,7 +1337,7 @@ async function delTask(id){
   });
 }
 function dupTask(id){const t=GT().find(x=>x.id===id);if(!t)return;const c=normTask({...t,id:Date.now()});GT().unshift(c);menuFor=null;pushUndo({type:'add',task:{...c},projId:curProj});renderTable();updateStats();save();cuTask(c);toast('Duplicated')}
-async function addSub(tid){const t=GT().find(x=>x.id===tid);if(!t)return;t.subtasks=t.subtasks||[];t.subtasks.push({id:Date.now(),title:'New subtask',done:false,status:'todo'});expanded[tid]=true;menuFor=null;renderTable();save();await cuTask(t)}
+async function addSub(tid){const t=GT().find(x=>x.id===tid);if(!t)return;t.subtasks=t.subtasks||[];t.subtasks.push({id:Date.now(),title:'New subtask',done:false,status:'todo',priority:'medium',owners:[]});expanded[tid]=true;menuFor=null;renderTable();save();await cuTask(t)}
 async function togSub(tid,sid){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(s){s.done=!s.done;if(s.done)s.status='done';renderTable();save();await cuTask(t)}}
 async function editSub(tid,sid,val){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(s){s.title=val;save();await cuTask(t)}}
 async function delSub(tid,sid){const t=GT().find(x=>x.id===tid);if(!t)return;t.subtasks=t.subtasks.filter(x=>x.id!==sid);renderTable();save();await cuTask(t)}
@@ -1352,11 +1353,11 @@ function togMenu(id,e){
 }
 
 // Columns
-function openColCreate(){const id='col_'+Date.now();columns.push({id,label:'New column',type:'text',required:false,width:'170px'});Object.keys(byProj).forEach(pid=>byProj[pid]=byProj[pid].map(normTask));renderTable();save();openColEd(id)}
+function openColCreate(){const id='col_'+Date.now();columns.push({id,label:'New column',type:'text',required:false,width:170});Object.keys(byProj).forEach(pid=>byProj[pid]=byProj[pid].map(normTask));renderTable();save();openColEd(id)}
 function buildOptRows(c){return(c.options||[]).map((o,i)=>`<div class="opt-row" id="or-${i}"><input class="f-in2" style="flex:1" value="${esc(o.v)}" id="ov-${i}" onchange="prvOpt(${i})"><span style="font-size:11px;color:var(--text-3)">bg</span><input type="color" value="${o.bg}" id="ob-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt(${i})"><span style="font-size:11px;color:var(--text-3)">text</span><input type="color" value="${o.tc}" id="ot-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt(${i})"><span class="sig-badge" id="op-${i}" style="background:${o.bg};color:${o.tc};min-width:54px;justify-content:center">${esc(o.v)}</span><button class="opt-del" onclick="document.getElementById('or-${i}').remove()">✕</button></div>`).join('')}
 function prvOpt(i){const v=document.getElementById('ov-'+i)?.value||'',bg=document.getElementById('ob-'+i)?.value||'#f0f0f0',tc=document.getElementById('ot-'+i)?.value||'#333';const p=document.getElementById('op-'+i);if(p){p.style.background=bg;p.style.color=tc;p.textContent=v}}
 function addOptRow(){const c=document.getElementById('opt-rows'),i='n'+Date.now();const d=document.createElement('div');d.className='opt-row';d.id='or-'+i;d.innerHTML=`<input class="f-in2" style="flex:1" value="Option" id="ov-${i}" onchange="prvOpt('${i}')"><span style="font-size:11px;color:var(--text-3)">bg</span><input type="color" value="#EEF0FF" id="ob-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt('${i}')"><span style="font-size:11px;color:var(--text-3)">text</span><input type="color" value="#4338CA" id="ot-${i}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;padding:1px;cursor:pointer" onchange="prvOpt('${i}')"><span class="sig-badge" id="op-${i}" style="background:#EEF0FF;color:#4338CA;min-width:54px;justify-content:center">Option</span><button class="opt-del" onclick="this.closest('.opt-row').remove()">✕</button>`;c.appendChild(d)}
-function openColEd(id){const c=columns.find(x=>x.id===id);if(!c)return;const types=['text','number','date','list','multi'].map(t=>`<option ${(c.type||'text')===t?'selected':''} value="${t}">${{list:'List (dropdown)',multi:'Multi-assignee'}[t]||t}</option>`).join('');openModal({title:'Edit column',wide:true,showDel:!c.required,body:`<div><label class="f-lbl2">Column name</label><input id="cn" class="f-in2" value="${esc(c.label)}"></div><div><label class="f-lbl2">Type</label><select id="ct" class="f-in2" onchange="togOptSec(this.value)">${types}</select></div><div id="opt-sec" style="${c.type==='list'?'':'display:none'}"><label class="f-lbl2">Options & colours</label><div id="opt-rows">${buildOptRows(c)}</div><button type="button" class="sub-add" onclick="addOptRow()">+ Add option</button></div>`,save:'Save',onSave:()=>{c.label=document.getElementById('cn').value.trim()||c.label;c.type=document.getElementById('ct').value;if(c.type==='list'){const rows=document.querySelectorAll('#opt-rows .opt-row');c.options=[...rows].map(r=>{const i=r.id.replace('or-','');return{v:document.getElementById('ov-'+i)?.value||'',bg:document.getElementById('ob-'+i)?.value||'#f0f0f0',tc:document.getElementById('ot-'+i)?.value||'#333'}}).filter(o=>o.v.trim())}else c.options=[];renderTable();save();closeModal()},onDel:()=>{columns=columns.filter(x=>x.id!==id);Object.keys(byProj).forEach(pid=>byProj[pid].forEach(t=>delete t[id]));renderTable();save();closeModal()}})}
+function openColEd(id){const c=columns.find(x=>x.id===id);if(!c)return;const types=['text','number','date','list','multi'].map(t=>`<option ${(c.type||'text')===t?'selected':''} value="${t}">${{list:'List (dropdown)',multi:'Multi-assignee'}[t]||t}</option>`).join('');openModal({title:'Edit column',wide:true,showDel:!c.required,body:`<div><label class="f-lbl2">Column name</label><input id="cn" class="f-in2" value="${esc(c.label)}"></div><div><label class="f-lbl2">Type</label><select id="ct" class="f-in2" onchange="togOptSec(this.value)">${types}</select></div><div id="opt-sec" style="${c.type==='list'?'':'display:none'}"><label class="f-lbl2">Options & colours</label><div id="opt-rows">${buildOptRows(c)}</div><button type="button" onclick="addOptRow()">+ Add option</button></div>`,save:'Save',onSave:()=>{c.label=document.getElementById('cn').value.trim()||c.label;c.type=document.getElementById('ct').value;if(c.type==='list'){const rows=document.querySelectorAll('#opt-rows .opt-row');c.options=[...rows].map(r=>{const i=r.id.replace('or-','');return{v:document.getElementById('ov-'+i)?.value||'',bg:document.getElementById('ob-'+i)?.value||'#f0f0f0',tc:document.getElementById('ot-'+i)?.value||'#333'}}).filter(o=>o.v.trim())}else c.options=[];renderTable();save();closeModal()},onDel:()=>{columns=columns.filter(x=>x.id!==id);Object.keys(byProj).forEach(pid=>byProj[pid].forEach(t=>delete t[id]));renderTable();save();closeModal()}})}
 function togOptSec(v){const s=document.getElementById('opt-sec');if(s)s.style.display=v==='list'?'':'none'}
 
 // Filters
@@ -1419,7 +1420,7 @@ function openSidePanel(tid){
     </div>
     <div class="sp-section"><div class="sp-lbl">Subtasks (${(t.subtasks||[]).length})</div>
       ${(t.subtasks||[]).map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><input type="checkbox" style="accent-color:var(--brand)" ${s.done?'checked':''} onchange="togSub(${tid},${s.id})"><span style="font-size:12px;flex:1;${s.done?'text-decoration:line-through;opacity:.5':''}">${esc(s.title)}</span></div>`).join('')||'<div style="font-size:12px;color:var(--text-3)">No subtasks</div>'}
-      <button class="sub-add" style="margin-top:8px" onclick="addSub(${tid})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add subtask</button>
+      <button style="margin-top:8px;background:none;border:1px dashed var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;color:var(--text-3);cursor:pointer;font-family:inherit" onclick="addSub(${tid})">+ Add subtask</button>
     </div>`;
   sp.classList.add('open');
 }
@@ -1435,12 +1436,10 @@ async function runPrompt(){
   const ta=document.getElementById('cmd-ta');if(!ta)return;
   const text=ta.value.trim();if(!text)return;
   ta.value='';autoGrow(ta);
-  // Always send to Claude for smart parsing
   const lt=document.createElement('div');lt.className='toast';lt.textContent='⚡ Thinking…';document.body.appendChild(lt);
   const result=await parseCommandWithClaude(text);
   lt.remove();
   if(result)return handleParsedCommand(result);
-  // Fallback: single task
   const title=text.replace(/^[-*•·\d.)]+\s*/,'').replace(/^(create|add|new)\s+(a\s+)?(task[s]?[:\s-]*)/i,'').trim();
   addTaskRow(title||text);
 }
@@ -1461,18 +1460,15 @@ User command: "${text}"
 Return one of these JSON shapes:
 1. Create tasks: {"action":"create","tasks":["task name 1","task name 2"]}
 2. Update task: {"action":"update","taskId":<id>,"field":"status|priority","value":"<val>"}
-3. Duplicate task: {"action":"duplicate","taskId":<id>,"variants":["variant name 1","variant name 2"]} (variants are the new task names, or empty array for simple duplicate)
+3. Duplicate task: {"action":"duplicate","taskId":<id>,"variants":["variant name 1","variant name 2"]}
 4. Add subtasks: {"action":"addSubtasks","taskId":<id>,"subtasks":["subtask 1","subtask 2"]}
 5. Multi-step: {"action":"multi","steps":[...array of above commands...]}
 
 Rules:
 - For create: extract ONLY the actual task name(s), strip any "create/add/new task" prefix
-- For "create two tasks X and Y": return both as separate items in tasks array
 - For priority values use: low, medium, high
 - For status values use: todo, progress, waiting, done
 - Match tasks by name similarity, pick closest match
-- If command asks to duplicate for multiple teams/variants, use duplicate with variants array
-- For add subtasks, parse each subtask name clearly
 
 Return ONLY valid JSON.`}]
       })
@@ -1488,7 +1484,7 @@ function handleParsedCommand(cmd){
   if(!cmd||!cmd.action)return;
   if(cmd.action==='create'){
     const tasks=cmd.tasks||[];
-    if(tasks.length===0)return;
+    if(!tasks.length)return;
     if(tasks.length===1){addTaskRow(tasks[0]);return}
     showParsePreview(tasks);
   }else if(cmd.action==='update'){
@@ -1500,20 +1496,17 @@ function handleParsedCommand(cmd){
     const t=GT().find(x=>x.id===cmd.taskId);
     if(!t){toast('Task not found',false);return}
     const variants=cmd.variants||[];
-    if(variants.length===0){dupTask(t.id);return}
+    if(!variants.length){dupTask(t.id);return}
     variants.forEach(name=>{
       const c=normTask({...t,id:Date.now()+Math.random(),task:name});
-      GT().unshift(c);pushUndo({type:'add',task:{...c},projId:curProj});
-      cuTask(c);
+      GT().unshift(c);pushUndo({type:'add',task:{...c},projId:curProj});cuTask(c);
     });
     renderAll();save();toast(`Created ${variants.length} duplicate${variants.length>1?'s':''}`);
   }else if(cmd.action==='addSubtasks'){
     const t=GT().find(x=>x.id===cmd.taskId);
     if(!t){toast('Task not found',false);return}
     t.subtasks=t.subtasks||[];
-    (cmd.subtasks||[]).forEach(name=>{
-      t.subtasks.push({id:Date.now()+Math.random(),title:name,done:false,status:'todo',priority:'medium',owners:[]});
-    });
+    (cmd.subtasks||[]).forEach(name=>{t.subtasks.push({id:Date.now()+Math.random(),title:name,done:false,status:'todo',priority:'medium',owners:[]})});
     expanded[t.id]=true;
     renderAll();save();cuTask(t);
     toast(`Added ${cmd.subtasks.length} subtask${cmd.subtasks.length>1?'s':''} to "${t.task}"`);
@@ -1532,9 +1525,7 @@ function showParsePreview(tasks){
 function hideParsePreview(){const pp=document.getElementById('parse-preview');if(pp)pp.style.display='none'}
 function confirmParsed(){document.querySelectorAll('#parse-preview .pp-item input').forEach(inp=>{const v=inp.value.trim();if(v)addTaskRow(v)});hideParsePreview()}
 
-// Voice input
-
-function findT(msg){if(!msg)return GT()[0]||null;const k=msg.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['task','done','mark','create','delete','add','new','high','priority'].includes(w));return GT().find(t=>k.some(kw=>String(t.task||'').toLowerCase().includes(kw)))||GT()[0]||null}
+// Voice
 let recognition=null,isListening=false;
 function toggleVoice(){
   const btn=document.getElementById('cmd-voice-btn');
@@ -1573,13 +1564,11 @@ function openSettings(tab='members'){
       ${memberRows||'<div style="color:var(--text-3);font-size:12px;padding:10px 0">No other members yet.</div>'}
     </div>
     <div id="stab-content-workspace" style="${tab==='workspace'?'':'display:none'}">
-      <div class="section-title" style="margin-bottom:12px">Workspace</div>
       <div style="margin-bottom:12px"><label class="f-lbl2">Workspace name</label><input id="ws-name" class="f-in2" value="${esc(wsName)}"></div>
       <div><label class="f-lbl2">Default priority</label><select id="ws-pri" class="f-in2"><option value="low" ${wsPriority==='low'?'selected':''}>Low</option><option value="medium" ${wsPriority==='medium'?'selected':''}>Medium</option><option value="high" ${wsPriority==='high'?'selected':''}>High</option></select></div>
       <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="saveWS()">Save</button>
     </div>
     <div id="stab-content-account" style="${tab==='account'?'':'display:none'}">
-      <div class="section-title" style="margin-bottom:12px">Your account</div>
       <div class="av-upload" style="margin-bottom:16px">
         <div class="av-prev" id="sett-av-prev">${profile.photo?`<img src="${profile.photo}" alt="">`:((profile.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2))}</div>
         <div><button class="av-btn" onclick="document.getElementById('sett-avf').click()">Upload photo</button><input type="file" id="sett-avf" accept="image/*" style="display:none" onchange="triggerCrop(this)"><div style="font-size:11px;color:var(--text-3);margin-top:4px">Drag to reposition after upload</div></div>
@@ -1623,7 +1612,6 @@ function openHelp(){
             <span class="kbd">⌘F</span><span>Focus search</span>
             <span class="kbd">⌘Z</span><span>Undo</span>
             <span class="kbd">⌘⇧Z</span><span>Redo</span>
-            <span class="kbd">⌫ Del</span><span>Delete selected</span>
             <span class="kbd">Esc</span><span>Close / clear</span>
           </div>
         </div>
@@ -1635,7 +1623,6 @@ function openHelp(){
             <span class="kbd">Ctrl+F</span><span>Focus search</span>
             <span class="kbd">Ctrl+Z</span><span>Undo</span>
             <span class="kbd">Ctrl+Y</span><span>Redo</span>
-            <span class="kbd">Del</span><span>Delete selected</span>
             <span class="kbd">Esc</span><span>Close / clear</span>
           </div>
         </div>
@@ -1646,7 +1633,7 @@ function openHelp(){
       <ul style="font-size:12px;color:var(--text-2);line-height:2;padding-left:16px">
         <li>Paste your daily agenda — AI extracts tasks with a preview to confirm</li>
         <li>Click 🎤 mic button or use voice to dictate tasks hands-free</li>
-        <li>Done tasks are hidden by default — toggle "Show done" to see them</li>
+        <li>Done tasks appear in a collapsible <strong>Completed</strong> section at the bottom</li>
         <li>Click ↗ on any task row to open comments &amp; details</li>
         <li>Deleted tasks go to Trash — restored within 7 days</li>
         <li>Drag column headers to reorder</li>
@@ -1674,7 +1661,10 @@ function loadState(){
   try{
     const r=localStorage.getItem(SK);if(!r)return;
     const s=JSON.parse(r);
-    projects=s.projects||projects;curProj=s.curProj||curProj;columns=s.columns||columns;byProj=s.byProj||byProj;
+    projects=s.projects||projects;curProj=s.curProj||curProj;
+    // Migrate column widths to numbers
+    if(s.columns)columns=s.columns.map(c=>({...c,width:typeof c.width==='number'?c.width:parseInt(c.width)||160}));
+    byProj=s.byProj||byProj;
     filters=s.filters||{};
     if(s.profile)profile={...profile,...s.profile};
     if(s.teamMembers)teamMembers=s.teamMembers;
