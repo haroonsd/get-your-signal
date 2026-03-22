@@ -297,21 +297,17 @@ td:last-child{border-right:none}
 .a-inp{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;font-family:inherit;outline:none;margin-bottom:4px;background:var(--surface);color:var(--text-1)}
 .a-inp:focus{border-color:var(--brand)}
 
-/* Subtasks */
-.sub-section td{border-right:none!important;padding:0!important}
-.sub-inner{padding:6px 12px 12px 54px;background:var(--surface-2);border-top:1px solid var(--border)}
-.sub-header{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;padding:8px 0 6px;display:flex;align-items:center;gap:6px}
-.sub-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:var(--r-sm);margin-bottom:2px;border:1px solid transparent;transition:all .1s}
-.sub-row:hover{background:var(--surface);border-color:var(--border)}
-.sub-cb{width:15px;height:15px;accent-color:var(--brand);flex-shrink:0;cursor:pointer}
-.sub-name{flex:1;background:none;border:1px solid transparent;border-radius:4px;padding:2px 6px;font-size:12px;color:var(--text-1);font-family:inherit;outline:none}
-.sub-name:focus{border-color:var(--brand);background:var(--brand-light)}
-.sub-name.done{opacity:.5;text-decoration:line-through}
-.sub-del{background:none;border:none;cursor:pointer;color:var(--text-3);font-size:12px;padding:2px 4px;border-radius:3px;opacity:0}
-.sub-row:hover .sub-del{opacity:1}
-.sub-del:hover{color:var(--red)}
-.sub-add{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:var(--r-sm);cursor:pointer;color:var(--text-3);font-size:12px;border:1px dashed transparent;transition:all .12s;margin-top:2px;background:none;font-family:inherit;width:100%;text-align:left}
-.sub-add:hover{background:var(--brand-light);color:var(--brand);border-color:var(--brand)}
+/* Subtasks — Monday.com style, column-aligned */
+.sub-section td{padding:0!important;border-right:none!important}
+.sub-tbody tr{border-bottom:1px solid var(--border);background:var(--surface-2)}
+.sub-tbody tr:hover{background:var(--surface-3)}
+.sub-tbody td{border-right:1px solid var(--border);vertical-align:middle;padding:0}
+.sub-tbody td:last-child{border-right:none}
+.sub-indent{width:54px;min-width:54px;padding:0!important;border-right:none!important;position:relative}
+.sub-indent::after{content:'';position:absolute;left:32px;top:0;bottom:0;width:1px;background:var(--border)}
+.sub-add-row td{padding:0!important;border-right:none!important;background:var(--surface-2);border-bottom:2px solid var(--border)}
+.sub-add-inline{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 54px;cursor:pointer;color:var(--text-3);font-size:12px;transition:background .12s}
+.sub-add-inline:hover{color:var(--brand);background:var(--brand-light)}
 
 /* Row actions */
 .act-cell{width:44px;padding:4px 8px!important}
@@ -1126,25 +1122,50 @@ function renderCell(t,c){
 function renderSubtasks(t){
   const statusCol=columns.find(c=>c.id==='status');
   const priorityCol=columns.find(c=>c.id==='priority');
-  const rows=(t.subtasks||[]).map(s=>{
+  const subRows=(t.subtasks||[]).map(s=>{
     const{bg:sbg,tc:stc}=listStyle(statusCol,s.status||'todo');
     const{bg:pbg,tc:ptc}=listStyle(priorityCol,s.priority||'medium');
-    const oid=`sub-owner-${t.id}-${s.id}`;
-    const ownerChips=(s.owners||[]).map(a=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--brand-light);color:var(--brand);border-radius:20px;padding:1px 7px 1px 4px;font-size:10px;font-weight:500">${a[0].toUpperCase()} ${esc(a)}<button style="background:none;border:none;cursor:pointer;font-size:9px;color:var(--brand);padding:0 0 0 2px" onclick="rmSubOwner(${t.id},${s.id},'${esc(a)}')">×</button></span>`).join('');
-    return`<div class="sub-row" data-sid="${s.id}">
-      <input type="checkbox" class="sub-cb" ${s.done?'checked':''} onchange="togSub(${t.id},${s.id})">
-      <input class="sub-name ${s.done?'done':''}" value="${esc(s.title)}" placeholder="Subtask name" onchange="editSub(${t.id},${s.id},this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="min-width:120px">
-      <button class="sig-badge" style="background:${sbg};color:${stc};font-size:10px;padding:2px 8px;cursor:pointer;flex-shrink:0" id="subbadge-s-${t.id}-${s.id}" onclick="showListDD('sub_${t.id}_${s.id}','status','${s.status||'todo'}',columns.find(c=>c.id==='status'),document.getElementById('subbadge-s-${t.id}-${s.id}'))">${s.status||'todo'}</button>
-      <button class="sig-badge" style="background:${pbg};color:${ptc};font-size:10px;padding:2px 8px;cursor:pointer;flex-shrink:0" id="subbadge-p-${t.id}-${s.id}" onclick="showListDD('sub_${t.id}_${s.id}','priority','${s.priority||'medium'}',columns.find(c=>c.id==='priority'),document.getElementById('subbadge-p-${t.id}-${s.id}'))">${s.priority||'medium'}</button>
-      <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;min-width:80px">${ownerChips}<button style="background:none;border:1px dashed var(--border-strong);border-radius:20px;padding:1px 7px;font-size:10px;color:var(--text-3);cursor:pointer" onclick="openSubOwnerDD(${t.id},${s.id},this)">+ Add</button></div>
-      <button class="sub-del" onclick="delSub(${t.id},${s.id})">✕</button>
-    </div>`;
+    const sidS=`subbadge-s-${t.id}-${s.id}`;
+    const sidP=`subbadge-p-${t.id}-${s.id}`;
+    const ownerChips=(s.owners||[]).map(a=>`<span class="chip" style="font-size:10px;padding:1px 7px 1px 4px"><span class="chip-av" style="width:14px;height:14px;font-size:7px">${a[0].toUpperCase()}</span>${esc(a)}<button class="chip-del" onclick="rmSubOwner(${t.id},${s.id},'${esc(a)}')">×</button></span>`).join('');
+    // Build cells matching column order
+    const cells=columns.map(c=>{
+      if(c.id==='task')return`<td><div style="display:flex;align-items:center;gap:6px;padding:5px 8px">
+        <input type="checkbox" class="sub-cb" ${s.done?'checked':''} onchange="togSub(${t.id},${s.id})" style="width:14px;height:14px;accent-color:var(--brand);flex-shrink:0;cursor:pointer">
+        <input style="flex:1;background:none;border:1px solid transparent;border-radius:4px;padding:2px 6px;font-size:12px;color:var(--text-1);font-family:inherit;outline:none;${s.done?'text-decoration:line-through;opacity:.5':''}" value="${esc(s.title)}" placeholder="Subtask name" onchange="editSub(${t.id},${s.id},this.value)" onkeydown="if(event.key==='Enter')this.blur()" onfocus="this.style.borderColor='var(--brand)';this.style.background='var(--brand-light)'" onblur="this.style.borderColor='transparent';this.style.background='none'">
+        <button class="sub-del" style="opacity:0;background:none;border:none;cursor:pointer;color:var(--text-3);font-size:12px;padding:2px 4px;border-radius:3px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-3)'" onclick="delSub(${t.id},${s.id})" onmouseenter="this.style.opacity=1" >✕</button>
+      </div></td>`;
+      if(c.id==='status')return`<td><div style="padding:5px 12px"><button class="sig-badge" id="${sidS}" style="background:${sbg};color:${stc}" onclick="showListDD('sub_${t.id}_${s.id}','status','${s.status||'todo'}',columns.find(c=>c.id==='status'),document.getElementById('${sidS}'))"><span class="bdot" style="background:${stc}"></span>${s.status||'todo'}</button></div></td>`;
+      if(c.id==='priority')return`<td><div style="padding:5px 12px"><button class="sig-badge" id="${sidP}" style="background:${pbg};color:${ptc}" onclick="showListDD('sub_${t.id}_${s.id}','priority','${s.priority||'medium'}',columns.find(c=>c.id==='priority'),document.getElementById('${sidP}'))"><span class="bdot" style="background:${ptc}"></span>${s.priority||'medium'}</button></div></td>`;
+      if(c.id==='owners')return`<td><div class="assignee-cell">${ownerChips}<button class="chip-add" style="font-size:10px;padding:1px 7px" onclick="openSubOwnerDD(${t.id},${s.id},this)">+ Add</button></div></td>`;
+      if(c.id==='dueDate')return`<td><div style="padding:5px 12px;font-size:12px;color:var(--text-3)">${fdate(s.dueDate)||'—'}</div></td>`;
+      return`<td></td>`;
+    }).join('');
+    return`<tr>
+      <td class="cb-cell" style="background:var(--surface-2)"></td>
+      <td class="live-cell" style="background:var(--surface-2)">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">
+          <div style="width:1px;height:100%;background:var(--border);margin:0 auto"></div>
+        </div>
+      </td>
+      ${cells}
+      <td class="act-cell" style="background:var(--surface-2)"></td>
+    </tr>`;
   }).join('');
-  return`<tr class="sub-section"><td colspan="${columns.length+4}"><div class="sub-inner">
-    <div class="sub-header"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>Subtasks · ${(t.subtasks||[]).length}</div>
-    ${rows}
-    <button class="sub-add" onclick="addSub(${t.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add subtask</button>
-  </div></td></tr>`;
+
+  const addSubRow=`<tr class="sub-add-row">
+    <td class="cb-cell" style="background:var(--surface-2)"></td>
+    <td class="live-cell" style="background:var(--surface-2)"></td>
+    <td colspan="${columns.length+1}" style="background:var(--surface-2)"><div class="sub-add-inline" onclick="addSub(${t.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add subtask</div></td>
+  </tr>`;
+
+  // Wrap in a single spanning cell that contains a nested table
+  return`<tr class="sub-section"><td colspan="${columns.length+4}" style="padding:0!important;border:none">
+    <table style="width:100%;border-collapse:collapse">
+      <tbody class="sub-tbody">${subRows}</tbody>
+      ${addSubRow}
+    </table>
+  </td></tr>`;
 }
 async function cycleSubStatus(tid,sid){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;const opts=['todo','progress','waiting','done'];s.status=opts[(opts.indexOf(s.status||'todo')+1)%opts.length];if(s.status==='done')s.done=true;renderTable();save();await cuTask(t)}
 
@@ -1416,20 +1437,91 @@ async function runPrompt(){
   const ta=document.getElementById('cmd-ta');if(!ta)return;
   const text=ta.value.trim();if(!text)return;
   ta.value='';autoGrow(ta);
-  const lo=text.toLowerCase();
-  if(/^(done|complete|mark done)\s+/i.test(lo)){const t=findT(text);if(t){updCell(t.id,'status','done');toast('Done! 🎉')}return}
-  if(/^(delete|remove)\s+/i.test(lo)){const t=findT(text);if(t)delTask(t.id);return}
-  if(/^high priority\s+/i.test(lo)){const t=findT(text);if(t){updCell(t.id,'priority','high');toast('Priority set to high')}return}
-  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
-  if(lines.length>1){
-    const lt=document.createElement('div');lt.className='toast';lt.textContent='⚡ Parsing…';document.body.appendChild(lt);
-    let tasks=await parseWithClaude(text);lt.remove();
-    if(!tasks)tasks=smartLocalParse(text);
-    if(tasks&&tasks.length>0)return showParsePreview(tasks);
-    return;
-  }
-  const title=text.replace(/^[-*•·\d.)]+\s*/,'').replace(/^(create|add|new)\s+(a\s+)?task[:\s-]*/i,'').trim();
+  // Always send to Claude for smart parsing
+  const lt=document.createElement('div');lt.className='toast';lt.textContent='⚡ Thinking…';document.body.appendChild(lt);
+  const result=await parseCommandWithClaude(text);
+  lt.remove();
+  if(result)return handleParsedCommand(result);
+  // Fallback: single task
+  const title=text.replace(/^[-*•·\d.)]+\s*/,'').replace(/^(create|add|new)\s+(a\s+)?(task[s]?[:\s-]*)/i,'').trim();
   addTaskRow(title||text);
+}
+
+async function parseCommandWithClaude(text){
+  try{
+    const taskList=GT().map(t=>`- "${t.task}" (id:${t.id})`).join('\n')||'(no tasks yet)';
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+        messages:[{role:'user',content:`You are a task management AI. Parse the user's command and return ONLY a JSON object, no markdown.
+
+Current tasks:
+${taskList}
+
+User command: "${text}"
+
+Return one of these JSON shapes:
+1. Create tasks: {"action":"create","tasks":["task name 1","task name 2"]}
+2. Update task: {"action":"update","taskId":<id>,"field":"status|priority","value":"<val>"}
+3. Duplicate task: {"action":"duplicate","taskId":<id>,"variants":["variant name 1","variant name 2"]} (variants are the new task names, or empty array for simple duplicate)
+4. Add subtasks: {"action":"addSubtasks","taskId":<id>,"subtasks":["subtask 1","subtask 2"]}
+5. Multi-step: {"action":"multi","steps":[...array of above commands...]}
+
+Rules:
+- For create: extract ONLY the actual task name(s), strip any "create/add/new task" prefix
+- For "create two tasks X and Y": return both as separate items in tasks array
+- For priority values use: low, medium, high
+- For status values use: todo, progress, waiting, done
+- Match tasks by name similarity, pick closest match
+- If command asks to duplicate for multiple teams/variants, use duplicate with variants array
+- For add subtasks, parse each subtask name clearly
+
+Return ONLY valid JSON.`}]
+      })
+    });
+    const data=await res.json();
+    const raw=data?.content?.[0]?.text||'';
+    const clean=raw.replace(/```[a-z]*|```/g,'').trim();
+    return JSON.parse(clean);
+  }catch(e){console.warn('Command parse failed',e);return null}
+}
+
+function handleParsedCommand(cmd){
+  if(!cmd||!cmd.action)return;
+  if(cmd.action==='create'){
+    const tasks=cmd.tasks||[];
+    if(tasks.length===0)return;
+    if(tasks.length===1){addTaskRow(tasks[0]);return}
+    showParsePreview(tasks);
+  }else if(cmd.action==='update'){
+    const t=GT().find(x=>x.id===cmd.taskId);
+    if(!t){toast('Task not found',false);return}
+    updCell(t.id,cmd.field,cmd.value);
+    toast(`Updated "${t.task}": ${cmd.field} → ${cmd.value}`);
+  }else if(cmd.action==='duplicate'){
+    const t=GT().find(x=>x.id===cmd.taskId);
+    if(!t){toast('Task not found',false);return}
+    const variants=cmd.variants||[];
+    if(variants.length===0){dupTask(t.id);return}
+    variants.forEach(name=>{
+      const c=normTask({...t,id:Date.now()+Math.random(),task:name});
+      GT().unshift(c);pushUndo({type:'add',task:{...c},projId:curProj});
+      cuTask(c);
+    });
+    renderAll();save();toast(`Created ${variants.length} duplicate${variants.length>1?'s':''}`);
+  }else if(cmd.action==='addSubtasks'){
+    const t=GT().find(x=>x.id===cmd.taskId);
+    if(!t){toast('Task not found',false);return}
+    t.subtasks=t.subtasks||[];
+    (cmd.subtasks||[]).forEach(name=>{
+      t.subtasks.push({id:Date.now()+Math.random(),title:name,done:false,status:'todo',priority:'medium',owners:[]});
+    });
+    expanded[t.id]=true;
+    renderAll();save();cuTask(t);
+    toast(`Added ${cmd.subtasks.length} subtask${cmd.subtasks.length>1?'s':''} to "${t.task}"`);
+  }else if(cmd.action==='multi'){
+    (cmd.steps||[]).forEach(step=>handleParsedCommand(step));
+  }
 }
 
 function showParsePreview(tasks){
@@ -1442,13 +1534,9 @@ function showParsePreview(tasks){
 function hideParsePreview(){const pp=document.getElementById('parse-preview');if(pp)pp.style.display='none'}
 function confirmParsed(){document.querySelectorAll('#parse-preview .pp-item input').forEach(inp=>{const v=inp.value.trim();if(v)addTaskRow(v)});hideParsePreview()}
 
-async function parseWithClaude(text){
-  try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:`Extract tasks from this text. Rules:\n- Return ONLY a JSON array of strings, nothing else, no markdown\n- Each string = one clean task name\n- Strip leading dashes, bullets, numbers\n- SKIP headings/titles like "Agenda:", "Today:", "To do:"\n- SKIP empty lines\n\nText:\n${text}\n\nReturn only: ["task 1","task 2"]`}]})});const data=await res.json();const raw=data?.content?.[0]?.text||'';const clean=raw.replace(/```[a-z]*|```/g,'').trim();const parsed=JSON.parse(clean);if(Array.isArray(parsed)&&parsed.every(x=>typeof x==='string'))return parsed.filter(x=>x.trim())}catch(e){console.warn('Claude parse failed',e)}return null
-}
-function smartLocalParse(text){const SKIP=/^(agenda|today'?s?|tasks?|to.?do|items?|monday|notes?|morning|evening)\s*[:\-]?\s*$/i;return text.split('\n').map(l=>l.trim()).filter(l=>l.length>2&&!SKIP.test(l)).map(l=>l.replace(/^[-*•·\d.)]+\s*/,'').trim()).filter(l=>l.length>2)}
-function findT(msg){if(!msg)return GT()[0]||null;const k=msg.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['task','done','mark','create','delete','add','new','high','priority'].includes(w));return GT().find(t=>k.some(kw=>String(t.task||'').toLowerCase().includes(kw)))||GT()[0]||null}
-
 // Voice input
+
+function findT(msg){if(!msg)return GT()[0]||null;const k=msg.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['task','done','mark','create','delete','add','new','high','priority'].includes(w));return GT().find(t=>k.some(kw=>String(t.task||'').toLowerCase().includes(kw)))||GT()[0]||null}
 let recognition=null,isListening=false;
 function toggleVoice(){
   const btn=document.getElementById('cmd-voice-btn');
