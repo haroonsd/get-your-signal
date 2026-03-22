@@ -236,9 +236,10 @@ td:last-child{border-right:none}
 /* Task cell */
 .task-cell-wrap{display:flex;align-items:flex-start;gap:6px;padding:7px 12px}
 /* Expand button aligned — same size as text */
-.exp-btn{background:none;border:none;cursor:pointer;color:var(--text-3);font-size:11px;padding:2px 3px;border-radius:3px;flex-shrink:0;margin-top:2px;line-height:1;transition:transform .15s,color .15s;width:16px;height:16px;display:flex;align-items:center;justify-content:center}
+.exp-btn{background:none;border:none;cursor:pointer;color:var(--text-3);padding:0;border-radius:3px;flex-shrink:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;transition:color .15s;margin-top:1px}
 .exp-btn:hover{background:var(--brand-light);color:var(--brand)}
-.exp-btn.open{transform:rotate(90deg)}
+.exp-btn svg{transition:transform .15s;display:block}
+.exp-btn.open svg{transform:rotate(90deg)}
 .exp-btn.no-subs{color:var(--border-strong)}
 .exp-btn.no-subs:hover{color:var(--brand)}
 .task-ta{width:100%;background:none;border:1px solid transparent;border-radius:var(--r-sm);padding:3px 6px;font-size:13px;font-weight:500;color:var(--text-1);font-family:inherit;outline:none;resize:none;overflow:hidden;min-height:28px;line-height:1.5;transition:border .12s,background .12s}
@@ -714,7 +715,7 @@ let columns=[
   {id:'task',    label:'Task',    type:'text', required:true, width:'300px'},
   {id:'status',  label:'Status',  type:'list', required:true, options:[{v:'todo',bg:'#F0F1F5',tc:'#5A5F72'},{v:'progress',bg:'#EFF6FF',tc:'#1E40AF'},{v:'waiting',bg:'#FFFBEB',tc:'#92400E'},{v:'done',bg:'#ECFDF5',tc:'#065F46'}], width:'140px'},
   {id:'priority',label:'Priority',type:'list', required:true, options:[{v:'low',bg:'#ECFDF5',tc:'#065F46'},{v:'medium',bg:'#FFFBEB',tc:'#92400E'},{v:'high',bg:'#FEF2F2',tc:'#991B1B'}], width:'130px'},
-  {id:'owner',   label:'Owner',   type:'multi',required:false, width:'200px'},
+  {id:'owners',  label:'Owner',   type:'multi',required:false, width:'200px'},
   {id:'dueDate', label:'Due date',type:'date', required:false, width:'155px'},
 ];
 let byProj={'proj-1':[]},filters={},expanded={},menuFor=null,menuPos={x:0,y:0};
@@ -920,7 +921,31 @@ function doLogout(){
 }
 function togglePw(id,btn){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';btn.textContent=el.type==='password'?'👁':'🙈'}
 
-// ── Profile ───────────────────────────────────────────────
+// ── Profile persistence (Supabase) ────────────────────────
+async function saveProfileRemote(){
+  if(!sb)return;
+  try{
+    await sb.from('profiles').upsert({
+      id:profile.email,
+      name:profile.name,
+      email:profile.email,
+      photo:profile.photo,
+      role:profile.role
+    },{onConflict:'id'});
+  }catch(e){console.warn('Profile save failed',e)}
+}
+async function loadProfileRemote(){
+  if(!sb)return;
+  try{
+    const{data}=await sb.from('profiles').select('*').eq('id',profile.email).single();
+    if(data){
+      profile.name=data.name||profile.name;
+      profile.photo=data.photo||profile.photo;
+      profile.role=data.role||profile.role;
+      updProfile();
+    }
+  }catch(e){console.warn('Profile load failed',e)}
+}
 function avHTML(photo,name){
   const ini=(name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   return photo?`<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:`<span>${ini}</span>`;
@@ -969,6 +994,7 @@ function initSB(){
   try{
     sb=window.supabase.createClient(SB_URL,SB_ANON);
     setCS('connected');syncCloud();
+    loadProfileRemote();
     // Realtime subscription
     sb.channel('signal-tasks')
       .on('postgres_changes',{event:'*',schema:'public',table:'tasks'},payload=>{
@@ -1010,7 +1036,7 @@ async function syncCloud(){
       tD.forEach(r=>{
         const pid=r.project_id||'proj-1';
         if(!byProj[pid])byProj[pid]=[];
-        byProj[pid].push(normTask({id:r.id,task:r.task,status:r.status,priority:r.priority,assignees:r.assignees||[],dueDate:r.due_date,subtasks:r.subtasks||[]}));
+        byProj[pid].push(normTask({id:r.id,task:r.task,status:r.status,priority:r.priority,owners:r.owners||[],dueDate:r.due_date,subtasks:r.subtasks||[],description:r.description||''}));
       });
     }
     setCS('connected');save();renderAll();
@@ -1155,7 +1181,7 @@ async function listDDSelect(tid,colId,val){
     }
     if(val==='done'){
       confetti();
-      if((t.assignees||[]).length>0)notifyCompleted(t.task,profile.name);
+      if((t.owners||[]).length>0)notifyCompleted(t.task,profile.name);
     }
   }
 }
@@ -1188,44 +1214,44 @@ function openFP(tid,colId,currentVal,btnId){
 // ── Assignee / Owner ─────────────────────────────────────
 function getTeamSugg(){return[{name:profile.name,photo:profile.photo},...teamMembers.map(m=>({name:m.name,photo:m.photo||null}))]}
 function renderAssignee(t){
-  const chips=(t.assignees||[]).map(a=>{const m=getTeamSugg().find(x=>x.name===a);return`<span class="chip"><span class="chip-av">${m?.photo?`<img src="${m.photo}" alt="">`:a[0].toUpperCase()}</span>${esc(a)}<button class="chip-del" onclick="rmAssign(${t.id},'${esc(a)}')">×</button></span>`}).join('');
+  const chips=(t.owners||[]).map(a=>{const m=getTeamSugg().find(x=>x.name===a);return`<span class="chip"><span class="chip-av">${m?.photo?`<img src="${m.photo}" alt="">`:a[0].toUpperCase()}</span>${esc(a)}<button class="chip-del" onclick="rmOwner(${t.id},'${esc(a)}')">×</button></span>`}).join('');
   return`<div class="assignee-cell" style="position:relative">${chips}<button class="chip-add" onclick="openAssignDD(${t.id},this)">+ Add</button></div>`;
 }
 function openAssignDD(tid,btn){
   document.querySelectorAll('.a-dd').forEach(d=>d.remove());
   const t=GT().find(x=>x.id===tid);if(!t)return;
-  const as=t.assignees||[],sugg=getTeamSugg();
+  const as=t.owners||[],sugg=getTeamSugg();
   const dd=document.createElement('div');dd.className='a-dd';
   const rect=btn.getBoundingClientRect();
   dd.style.top=(rect.bottom+4)+'px';dd.style.left=rect.left+'px';
-  const opts=sugg.map(m=>`<div class="a-opt" onclick="toggleAssign(${tid},'${esc(m.name)}')"><div class="a-av">${m.photo?`<img src="${m.photo}" alt="">`:m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${as.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('');
-  dd.innerHTML=`<input class="a-inp" placeholder="Search…" oninput="filterAOpts(this,${tid})" onkeydown="if(event.key==='Enter'){addAssignCustom(${tid},this.value);this.value=''}"><div id="aopts-${tid}">${opts||`<div style="padding:8px;font-size:12px;color:var(--text-3)">No members yet</div>`}</div>`;
+  const opts=sugg.map(m=>`<div class="a-opt" onclick="toggleOwner(${tid},'${esc(m.name)}')"><div class="a-av">${m.photo?`<img src="${m.photo}" alt="">`:m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${as.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('');
+  dd.innerHTML=`<input class="a-inp" placeholder="Search…" oninput="filterAOpts(this,${tid})" onkeydown="if(event.key==='Enter'){addOwnerCustom(${tid},this.value);this.value=''}"><div id="aopts-${tid}">${opts||`<div style="padding:8px;font-size:12px;color:var(--text-3)">No members yet</div>`}</div>`;
   document.body.appendChild(dd);
   setTimeout(()=>document.addEventListener('click',function h(e){if(!dd.contains(e.target)&&!btn.contains(e.target)){dd.remove();document.removeEventListener('click',h)}},true),10);
 }
 function filterAOpts(inp,tid){
   const v=inp.value.toLowerCase(),t=GT().find(x=>x.id===tid);if(!t)return;
-  const as=t.assignees||[],s=getTeamSugg().filter(m=>m.name.toLowerCase().includes(v));
-  const el=document.getElementById('aopts-'+tid);if(el)el.innerHTML=s.map(m=>`<div class="a-opt" onclick="toggleAssign(${tid},'${esc(m.name)}')"><div class="a-av">${m.photo?`<img src="${m.photo}" alt="">`:m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${as.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('');
+  const as=t.owners||[],s=getTeamSugg().filter(m=>m.name.toLowerCase().includes(v));
+  const el=document.getElementById('aopts-'+tid);if(el)el.innerHTML=s.map(m=>`<div class="a-opt" onclick="toggleOwner(${tid},'${esc(m.name)}')"><div class="a-av">${m.photo?`<img src="${m.photo}" alt="">`:m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${as.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('');
 }
-async function toggleAssign(tid,name){
+async function toggleOwner(tid,name){
   const t=GT().find(x=>x.id===tid);if(!t)return;
-  t.assignees=t.assignees||[];
-  const wasAssigned=t.assignees.includes(name);
-  t.assignees=wasAssigned?t.assignees.filter(x=>x!==name):[...t.assignees,name];
+  t.owners=t.owners||[];
+  const wasAssigned=t.owners.includes(name);
+  t.owners=wasAssigned?t.owners.filter(x=>x!==name):[...t.owners,name];
   if(!wasAssigned)notifyAssigned(t.task,name);
   document.querySelectorAll('.a-dd').forEach(d=>d.remove());
   renderTable();save();await cuTask(t);
 }
-async function rmAssign(tid,name){const t=GT().find(x=>x.id===tid);if(!t)return;t.assignees=(t.assignees||[]).filter(x=>x!==name);renderTable();save();await cuTask(t)}
-async function addAssignCustom(tid,name){name=name.trim();if(!name)return;const t=GT().find(x=>x.id===tid);if(!t)return;t.assignees=t.assignees||[];if(!t.assignees.includes(name))t.assignees.push(name);renderTable();save();await cuTask(t)}
+async function rmOwner(tid,name){const t=GT().find(x=>x.id===tid);if(!t)return;t.owners=(t.owners||[]).filter(x=>x!==name);renderTable();save();await cuTask(t)}
+async function addOwnerCustom(tid,name){name=name.trim();if(!name)return;const t=GT().find(x=>x.id===tid);if(!t)return;t.owners=t.owners||[];if(!t.owners.includes(name))t.owners.push(name);renderTable();save();await cuTask(t)}
 
 // ── Table ─────────────────────────────────────────────────
 function applyF(tasks){return tasks.filter(t=>Object.entries(filters).every(([k,v])=>!v?.length||v.includes(String(t[k]||''))))}
 
 function renderCell(t,c){
   const v=t[c.id]??'';
-  if(c.id==='task')return`<div class="task-cell-wrap"><button class="exp-btn ${expanded[t.id]?'open':''} ${(t.subtasks||[]).length===0?'no-subs':''}" onclick="toggleExp(${t.id})" title="Subtasks (${(t.subtasks||[]).length})">▶</button><textarea class="task-ta" rows="1" onchange="updCell(${t.id},'task',this.value)" oninput="autoGrow(this)" onfocus="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.blur()}">${esc(v)}</textarea><button style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-3);border-radius:4px;flex-shrink:0" onclick="openSidePanel(${t.id})" title="Open details"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div>`;
+  if(c.id==='task')return`<div class="task-cell-wrap"><button class="exp-btn ${expanded[t.id]?'open':''} ${(t.subtasks||[]).length===0?'no-subs':''}" onclick="toggleExp(${t.id})" title="Subtasks (${(t.subtasks||[]).length})"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,1 7,5 3,9"/></svg></button><textarea class="task-ta" rows="1" onchange="updCell(${t.id},'task',this.value)" oninput="autoGrow(this)" onfocus="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.blur()}">${esc(v)}</textarea><button style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-3);border-radius:4px;flex-shrink:0" onclick="openSidePanel(${t.id})" title="Open details"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button></div>`;
   if(c.type==='list')return renderListBadge(t.id,c.id,v,c);
   if(c.type==='multi')return renderAssignee(t);
   if(c.type==='date')return renderDateCell(t,c);
@@ -1483,7 +1509,7 @@ function renderBoard(){
     const ct=tasks.filter(t=>t.status===col.id);
     const cards=ct.map(t=>{
       const od=isOD(t.dueDate,t.status),{bg,tc}=listStyle(pc,t.priority);
-      const avs=(t.assignees||[]).slice(0,4).map(a=>{const m=getTeamSugg().find(x=>x.name===a);return`<div class="b-av">${m?.photo?`<img src="${m.photo}" alt="">`:a[0].toUpperCase()}</div>`}).join('');
+      const avs=(t.owners||[]).slice(0,4).map(a=>{const m=getTeamSugg().find(x=>x.name===a);return`<div class="b-av">${m?.photo?`<img src="${m.photo}" alt="">`:a[0].toUpperCase()}</div>`}).join('');
       return`<div class="b-card" draggable="true" ondragstart="bDS(event,${t.id})" ondragend="bDE(event)"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><button class="sig-badge" style="background:${bg};color:${tc};font-size:10px;padding:2px 7px"><span class="bdot" style="background:${tc}"></span>${t.priority}</button></div><div class="b-title">${esc(t.task)}</div><div class="b-foot"><div class="b-avs">${avs||`<span style="font-size:11px;color:var(--text-3)">Unassigned</span>`}</div><span class="b-due ${od?'od':''}">${fdate(t.dueDate)}</span></div></div>`;
     }).join('');
     return`<div class="b-col"><div class="b-col-head"><div class="b-col-title"><span style="width:8px;height:8px;border-radius:50%;background:${col.color};display:inline-block"></span>${col.label}</div><span class="b-count">${ct.length}</span></div><div class="b-body" data-status="${col.id}" ondragover="bDO(event)" ondragleave="bDL(event)" ondrop="bDrop(event,'${col.id}')">${cards}<button class="b-add" onclick="addWithStatus('${col.id}')">+ Add task</button></div></div>`;
@@ -1532,7 +1558,7 @@ function openSidePanel(tid){
         <div><div style="color:var(--text-3);margin-bottom:3px">Status</div><div style="font-weight:500">${slbl(t.status)}</div></div>
         <div><div style="color:var(--text-3);margin-bottom:3px">Priority</div><div style="font-weight:500">${t.priority||'—'}</div></div>
         <div><div style="color:var(--text-3);margin-bottom:3px">Due date</div><div style="font-weight:500">${fdate(t.dueDate)||'—'}</div></div>
-        <div><div style="color:var(--text-3);margin-bottom:3px">Owner</div><div style="font-weight:500">${(t.assignees||[]).join(', ')||'—'}</div></div>
+        <div><div style="color:var(--text-3);margin-bottom:3px">Owner</div><div style="font-weight:500">${(t.owners||[]).join(', ')||'—'}</div></div>
       </div>
     </div>
     <div class="sp-section">
@@ -1687,9 +1713,9 @@ function saveAcct(){
   if(p1&&p1!==p2){toast('Passwords do not match',false);return}
   if(n)profile.name=n;if(e)profile.email=e;
   const img=document.getElementById('sett-av-prev')?.querySelector('img');if(img)profile.photo=img.src;
-  updProfile();save();toast('Account updated');closeModal();
+  updProfile();save();saveProfileRemote();toast('Account updated');closeModal();
 }
-function triggerCrop(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{openCropModal(e.target.result,dataUrl=>{profile.photo=dataUrl;const prev=document.getElementById('sett-av-prev');if(prev)prev.innerHTML=`<img src="${dataUrl}" alt="">`;updProfile();save();toast('Photo updated')})};r.readAsDataURL(f);inp.value=''}
+function triggerCrop(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();  r.onload=e=>{openCropModal(e.target.result,dataUrl=>{profile.photo=dataUrl;const prev=document.getElementById('sett-av-prev');if(prev)prev.innerHTML=`<img src="${dataUrl}" alt="">`;updProfile();save();saveProfileRemote();toast('Photo updated')})};r.readAsDataURL(f);inp.value=''}
 function sendInvite(){
   const email=document.getElementById('inv-email')?.value.trim(),role=document.getElementById('inv-role')?.value||'Member';
   if(!email){toast('Enter an email',false);return}
@@ -1792,9 +1818,15 @@ function loadState(){
     if(s.wsPriority)wsPriority=s.wsPriority;
     if(s.trash)trash=s.trash;
     if(s.comments)comments=s.comments;
-    // Migrate old 'assignee' column to 'owner' label
-    const ac=columns.find(c=>c.id==='owner'||c.id==='assignee');
-    if(ac){ac.id='owner';ac.label='Owner'}
+    // Migrate old assignee/assignees data to owners
+    Object.keys(byProj).forEach(pid=>{
+      byProj[pid].forEach(t=>{
+        if(!t.owners){t.owners=t.assignees||[];delete t.assignees}
+      });
+    });
+    // Migrate old column id
+    const ac=columns.find(c=>c.id==='assignee'||c.id==='assignees'||c.id==='owner');
+    if(ac){ac.id='owners';ac.label='Owner'}
   }catch(_){}
   updateTrashBadge();
 }
