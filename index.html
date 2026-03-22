@@ -486,10 +486,6 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
           Settings
         </button>
-        <button class="sb-icon-btn" onclick="toggleDark()">
-          <svg id="dm-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-          <span id="dm-label">Dark mode</span>
-        </button>
       </div>
       <div class="user-card" onclick="openSettings()">
         <div class="user-av" id="sb-av"><span id="sb-init">H</span></div>
@@ -515,13 +511,18 @@
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span id="od-count"></span>
         </div>
-      </div>
-      <div class="tb-right">
-        <div id="search-wrap">
+        <!-- Search in topbar left -->
+        <div id="search-wrap" style="margin-left:8px">
           <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="search-input" placeholder="Search tasks…" oninput="handleSearch(this.value)" onkeydown="if(event.key==='Escape'){this.value='';handleSearch('');}">
           <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
         </div>
+      </div>
+      <div class="tb-right">
+        <!-- Dark mode in topbar right -->
+        <button class="dm-topbar-btn" onclick="toggleDark()" title="Toggle dark mode" id="dm-topbar-btn">
+          <svg id="dm-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
         <div class="view-sw">
           <button class="vbtn active" id="vbtn-table" onclick="switchView('table')" title="Table">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
@@ -651,11 +652,11 @@ let darkMode=false;
 function toggleDark(){
   darkMode=!darkMode;
   document.documentElement.setAttribute('data-theme',darkMode?'dark':'');
-  const lbl=document.getElementById('dm-label');
   const ico=document.getElementById('dm-icon');
   const loginBtn=document.getElementById('login-dm-btn');
-  if(lbl)lbl.textContent=darkMode?'Light mode':'Dark mode';
-  if(ico)ico.innerHTML=darkMode?'<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>':'<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  if(ico)ico.innerHTML=darkMode
+    ?'<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+    :'<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
   if(loginBtn)loginBtn.textContent=darkMode?'☀ Light mode':'🌙 Dark mode';
   localStorage.setItem('signal_dark',darkMode?'1':'0');
 }
@@ -1016,7 +1017,18 @@ function openCropModal(src,cb){
   img.src=src;
   document.getElementById('crop-zoom').value=1;
   document.getElementById('crop-modal').classList.add('open');
-  img.onload=()=>applyCropTransform();
+  img.onload=()=>{
+    // Auto-fit: scale so the image fills the 200px circle
+    const container=document.getElementById('crop-container');
+    const circleD=200; // crop circle diameter in CSS px
+    const scaleToFit=Math.max(circleD/img.naturalWidth,circleD/img.naturalHeight)*1.05;
+    cropZoom=scaleToFit;
+    document.getElementById('crop-zoom').min=scaleToFit*0.5;
+    document.getElementById('crop-zoom').max=scaleToFit*4;
+    document.getElementById('crop-zoom').step=scaleToFit*0.01;
+    document.getElementById('crop-zoom').value=cropZoom;
+    applyCropTransform();
+  };
 }
 function closeCrop(){document.getElementById('crop-modal').classList.remove('open');cropCallback=null;}
 function applyCropTransform(){
@@ -1191,32 +1203,9 @@ function openProjectModal(){openModal({title:'New project',save:'Create',body:`<
 // Confetti
 function confetti(el){const r=el.getBoundingClientRect();['#5B4FE8','#10B981','#F59E0B','#EF4444','#3B82F6'].forEach(c=>{const p=document.createElement('span');p.style.cssText=`position:fixed;pointer-events:none;width:6px;height:6px;border-radius:50%;background:${c};left:${r.left+Math.random()*40}px;top:${r.top}px;z-index:999;transition:all .8s cubic-bezier(.25,.46,.45,.94)`;document.body.appendChild(p);setTimeout(()=>{p.style.transform=`translate(${(Math.random()-.5)*100}px,${-50-Math.random()*60}px)`;p.style.opacity='0';},20);setTimeout(()=>p.remove(),900);});}
 
-// Command bar
+function findT(msg){const k=msg.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['task','done','mark','create','delete','add','new','high','priority'].includes(w));return GT().find(t=>k.some(k=>String(t.task||'').toLowerCase().includes(k)))||GT()[0];}
 function handleCmdKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();runPrompt();}}
 function qcmd(p){const i=document.getElementById('cmd-ta');i.value=p;i.focus();autoGrow(i);}
-function parseTasks(text){
-  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-  const dashed=lines.filter(l=>/^-\s+/.test(l)).map(l=>l.replace(/^-\s*/,'').trim()).filter(l=>l.length>2);
-  if(dashed.length>1)return dashed;
-  const bullets=lines.filter(l=>/^[*•·]\s+/.test(l)).map(l=>l.replace(/^[*•·]\s+/,'').trim());
-  if(bullets.length>1)return bullets;
-  const numbered=lines.filter(l=>/^\d+[.)]\s+/.test(l)).map(l=>l.replace(/^\d+[.)]\s+/,'').trim());
-  if(numbered.length>1)return numbered;
-  if(lines.length>2)return lines;
-  return[text.trim()];
-}
-function runPrompt(){
-  const ta=document.getElementById('cmd-ta');const text=ta.value.trim();if(!text)return;ta.value='';autoGrow(ta);
-  const lo=text.toLowerCase();
-  if(/^(done|complete|mark done)\s+/i.test(lo)){const t=findT(text);if(t){updCell(t.id,'status','done');toast('Done! 🎉');}return;}
-  if(/^(delete|remove)\s+/i.test(lo)){const t=findT(text);if(t)delTask(t.id);return;}
-  if(/^high priority\s+/i.test(lo)){const t=findT(text);if(t){updCell(t.id,'priority','high');toast('Priority set to high');}return;}
-  const taskLines=parseTasks(text);
-  if(taskLines.length>1){taskLines.forEach(tl=>{if(tl.trim())addTaskRow(tl.trim());});toast(taskLines.length+' tasks added');return;}
-  const title=text.replace(/^(please\s+)?(create|add|new)\s+(a\s+)?task[:\s-]*/i,'').replace(/\s+(by|due)\s+\S+$/i,'').trim();
-  addTaskRow(title||text);
-}
-function findT(msg){const k=msg.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['task','done','mark','create','delete','add','new','high','priority'].includes(w));return GT().find(t=>k.some(k=>String(t.task||'').toLowerCase().includes(k)))||GT()[0];}
 
 // Boot
 function loadState(){
