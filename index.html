@@ -726,7 +726,12 @@ function doLogout(){document.getElementById('app').classList.remove('visible');d
 function togglePw(id,btn){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';btn.textContent=el.type==='password'?'👁':'🙈'}
 
 // ─── Profile ──────────────────────────────────────────────
-function avHTML(photo,name){const ini=(name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);return photo?`<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:`<span>${ini}</span>`}
+function avHTML(photo,name){
+  const ini=(name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  return photo
+    ? `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`
+    : `<span style="font-size:inherit;line-height:1">${ini}</span>`;
+}
 function updProfile(){
   const sbav=document.getElementById('sb-av');if(sbav)sbav.innerHTML=avHTML(profile.photo,profile.name);
   const nn=document.getElementById('sb-name');if(nn)nn.textContent=profile.name||'User';
@@ -860,12 +865,13 @@ async function handleListSelect(taskId, colId, val){
     setTimeout(()=>el.classList.remove('done-flash'),400);
   }
   if(colId==='status'){
-    const row=document.querySelector(`tr[data-tid="${taskId}"]`);
-    if(row){row.classList.toggle('od-row',isOD(t.dueDate,val));row.classList.toggle('live-row',myLiveTask===t.task)}
     if(val==='done'){
       confetti();if((t.owners||[]).length>0)notifyCompleted(t.task,profile.name);
       const r=document.querySelector(`tr[data-tid="${taskId}"]`);
       if(r){r.style.transition='opacity .35s,transform .35s';r.style.opacity='0';r.style.transform='translateX(16px)';setTimeout(()=>renderTable(),360)}
+    } else {
+      // Moving out of done — re-render so it moves back to active section
+      setTimeout(()=>renderTable(),50);
     }
   }
 }
@@ -1100,14 +1106,12 @@ function renderTable(){
 
 // ─── Delegated event handler for the whole table ──────────
 document.addEventListener('click', e=>{
-  // Ignore clicks outside the app table entirely
-  if(!e.target.closest('#tbl')&&!e.target.closest('.act-menu')&&!e.target.closest('.signal-dd')&&!e.target.closest('.done-trigger')){
-    // Still handle close-on-outside-click cleanup
-    if(!e.target.closest('.th-flt')&&!e.target.closest('.flt-menu'))document.querySelectorAll('.flt-menu').forEach(m=>m.remove());
-    if(!e.target.closest('.sig-badge')&&!e.target.closest('.signal-dd'))closeAllDD();
-    if(!e.target.closest('.act-menu')&&!e.target.closest('[data-menu]')&&menuFor!==null){menuFor=null;document.querySelectorAll('.act-menu').forEach(m=>m.remove())}
-    return;
-  }
+  // Cleanup on outside click (always runs)
+  if(!e.target.closest('.th-flt')&&!e.target.closest('.flt-menu'))document.querySelectorAll('.flt-menu').forEach(m=>m.remove());
+  if(!e.target.closest('.sig-badge')&&!e.target.closest('.signal-dd'))closeAllDD();
+  if(!e.target.closest('.act-menu')&&!e.target.closest('[data-menu]')&&menuFor!==null){menuFor=null;document.querySelectorAll('.act-menu').forEach(m=>m.remove())}
+  // Only route table-specific interactions
+  if(!e.target.closest('#tbl')&&!e.target.closest('.act-menu')&&!e.target.closest('.signal-dd'))return;
   // Expand/collapse subtasks
   const exp=e.target.closest('[data-exp]');
   if(exp){toggleExp(parseInt(exp.dataset.exp));return}
