@@ -212,12 +212,21 @@ span.flatpickr-weekday{color:var(--text-3)!important;font-weight:600!important;f
 .stat-lbl{font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .stat-val{font-size:26px;font-weight:600;line-height:1}
 
-/* Show done toggle */
-.show-done-bar{display:flex;align-items:center;gap:8px;padding:8px 4px;margin-bottom:4px;flex-shrink:0}
-.show-done-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:500;color:var(--text-3);cursor:pointer;font-family:inherit;transition:all .12s;display:flex;align-items:center;gap:5px}
-.show-done-btn:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-light)}
-.show-done-btn.active{border-color:var(--green);color:var(--green-text);background:var(--green-bg)}
-.done-count-pill{background:var(--green-bg);color:var(--green-text);font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px}
+/* Done section at bottom */
+.done-section-row td{padding:0!important;border-right:none!important}
+.done-section-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-top:2px solid var(--border);background:var(--surface-2);user-select:none;transition:background .12s}
+.done-section-hdr:hover{background:var(--surface-3)}
+.done-section-hdr svg{transition:transform .2s ease;flex-shrink:0;color:var(--text-3)}
+.done-section-hdr.open svg{transform:rotate(90deg)}
+.done-section-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px}
+.done-count-pill{background:var(--surface-3);color:var(--text-3);font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px}
+/* Done rows — greyed, no colour */
+tbody tr.done-row td{opacity:.55}
+tbody tr.done-row .task-ta{text-decoration:line-through;color:var(--text-3)}
+tbody tr.done-row .sig-badge{background:var(--surface-3)!important;color:var(--text-3)!important}
+tbody tr.done-row .sig-badge .bdot{background:var(--text-3)!important}
+tbody tr.done-row .date-pill{background:var(--surface-2)!important;color:var(--text-3)!important;border-color:var(--border)!important}
+tbody tr.done-row .chip{background:var(--surface-3)!important;color:var(--text-3)!important}
 
 /* Table */
 .tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:visible}
@@ -638,13 +647,6 @@ td:last-child{border-right:none}
           <div class="stat-card"><div class="stat-lbl">Done</div><div class="stat-val" id="s-done">0</div></div>
           <div class="stat-card"><div class="stat-lbl">Overdue</div><div class="stat-val" id="s-od" style="color:var(--red)">0</div></div>
         </div>
-        <div class="show-done-bar">
-          <button class="show-done-btn" id="show-done-btn" onclick="toggleShowDone()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            Show done
-            <span class="done-count-pill" id="done-count-pill">0</span>
-          </button>
-        </div>
         <div class="tbl-card"><div id="tbl"></div></div>
       </div>
       <!-- BOARD VIEW -->
@@ -790,11 +792,13 @@ function normTask(t={}){
 function autoGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,200)+'px'}
 
 // ── Show/hide done ────────────────────────────────────────
-function toggleShowDone(){
-  showDone=!showDone;
-  const btn=document.getElementById('show-done-btn');
-  if(btn)btn.classList.toggle('active',showDone);
-  renderTable();
+let doneExpanded=false;
+function toggleDoneSection(){
+  doneExpanded=!doneExpanded;
+  const hdr=document.getElementById('done-section-hdr');
+  if(hdr)hdr.classList.toggle('open',doneExpanded);
+  const body=document.getElementById('done-section-body');
+  if(body)body.style.display=doneExpanded?'':'none';
 }
 function updateDoneCount(){
   const n=GT().filter(t=>t.status==='done').length;
@@ -998,23 +1002,42 @@ function showListDD(tid,colId,val,col,anchorEl){
   closeAllDD();
   const rect=anchorEl.getBoundingClientRect();
   const dd=document.createElement('div');dd.className='signal-dd';
-  const renderOpts=(filter='')=>(col.options||[]).filter(o=>!filter||o.v.toLowerCase().includes(filter.toLowerCase())).map(o=>`<div class="signal-dd-item ${o.v===val?'active':''}" onclick="listDDSelect(${tid},'${colId}','${o.v}')"><span class="dd-label-pill" style="background:${o.bg};color:${o.tc}"><span class="dd-swatch" style="background:${o.tc}"></span>${esc(o.v)}</span><span class="dd-check">✓</span></div>`).join('');
-  dd.innerHTML=`<input class="dd-search" placeholder="Search labels…" id="dd-s-${tid}" oninput="(function(v){document.getElementById('dd-o-${tid}').innerHTML=(${JSON.stringify(col.options||[])}).filter(o=>!v||o.v.toLowerCase().includes(v.toLowerCase())).map(o=>'<div class=\\'signal-dd-item ${val}===o.v?\\'active\\':\\'\\'\\' onclick=\\'listDDSelect(${tid},\\'${colId}\\',\\''+o.v+'\\')\\'>'+('<span class=\\'dd-label-pill\\' style=\\'background:'+o.bg+';color:'+o.tc+'\\'>'+('<span class=\\'dd-swatch\\' style=\\'background:'+o.tc+'\\'>\\''+'</span>')+esc(o.v)+'</span>')+'<span class=\\'dd-check\\'>✓</span></div>').join('')})(this.value)"><div id="dd-o-${tid}">${renderOpts()}</div>`;
-  const spaceBelow=window.innerHeight-(rect.bottom+4),est=44+(col.options||[]).length*38;
+  dd.innerHTML=(col.options||[]).map(o=>`
+    <div class="signal-dd-item ${o.v===val?'active':''}" onclick="listDDSelect(${tid},'${colId}','${o.v}')">
+      <span class="dd-label-pill" style="background:${o.bg};color:${o.tc}">
+        <span class="dd-swatch" style="background:${o.tc}"></span>${esc(o.v)}
+      </span>
+      <span class="dd-check">✓</span>
+    </div>`).join('');
+  const spaceBelow=window.innerHeight-(rect.bottom+4),est=48+(col.options||[]).length*44;
   dd.style.top=Math.max(8,(spaceBelow>est?rect.bottom+4:rect.top-est-4))+'px';
   dd.style.left=Math.min(rect.left,window.innerWidth-240)+'px';
   document.body.appendChild(dd);openDD=dd;
-  if((col.options||[]).length>3)setTimeout(()=>document.getElementById(`dd-s-${tid}`)?.focus(),50);
   setTimeout(()=>document.addEventListener('click',function h(e){if(!dd.contains(e.target)){closeAllDD();document.removeEventListener('click',h)}},true),10);
 }
 async function listDDSelect(tid,colId,val){
   closeAllDD();
+  // Handle subtask IDs (format: "sub_taskId_subtaskId")
+  if(String(tid).startsWith('sub_')){
+    const parts=String(tid).split('_');
+    const parentId=parseInt(parts[1]),subId=parseInt(parts[2]);
+    const t=GT().find(x=>x.id===parentId);if(!t)return;
+    const s=t.subtasks.find(x=>x.id===subId);if(!s)return;
+    s[colId]=val;if(colId==='status'&&val==='done')s.done=true;
+    // Update badge in place
+    const uid=colId==='status'?`subbadge-s-${parentId}-${subId}`:`subbadge-p-${parentId}-${subId}`;
+    const col=columns.find(c=>c.id===colId);
+    const{bg,tc}=listStyle(col,val);
+    const el=document.getElementById(uid);
+    if(el){el.style.background=bg;el.style.color=tc;el.textContent=val;el.setAttribute('onclick',`showListDD('sub_${parentId}_${subId}','${colId}','${val}',columns.find(c=>c.id==='${colId}'),document.getElementById('${uid}'))`);}
+    renderTable();save();await cuTask(t);return;
+  }
   const t=GT().find(x=>x.id===tid);if(!t)return;
   const prev=t[colId];if(prev===val)return;
   pushUndo({type:'edit',id:tid,key:colId,prev,next:val});
   t[colId]=val;updateStats();updateDoneCount();save();cuTask(t);
   if(curView==='board'){renderBoard();return}
-  // Targeted badge swap — keeps animation alive
+  // Targeted badge swap
   const uid=`badge-${tid}-${colId}`;
   const col=columns.find(c=>c.id===colId);
   const{bg,tc}=listStyle(col,val);
@@ -1032,11 +1055,9 @@ async function listDDSelect(tid,colId,val){
     if(val==='done'){
       confetti();
       if((t.owners||[]).length>0)notifyCompleted(t.task,profile.name);
-      // If hiding done, remove row smoothly
-      if(!showDone){
-        const row=document.querySelector(`tr[data-tid="${tid}"]`);
-        if(row){row.style.transition='opacity .4s,transform .4s';row.style.opacity='0';row.style.transform='translateX(20px)';setTimeout(()=>renderTable(),420)}
-      }
+      // Slide row out then re-render to move it to done section
+      const row=document.querySelector(`tr[data-tid="${tid}"]`);
+      if(row){row.style.transition='opacity .35s,transform .35s';row.style.opacity='0';row.style.transform='translateX(16px)';setTimeout(()=>renderTable(),360)}
     }
   }
 }
@@ -1104,15 +1125,66 @@ function renderCell(t,c){
 
 function renderSubtasks(t){
   const statusCol=columns.find(c=>c.id==='status');
-  const rows=(t.subtasks||[]).map(s=>{const{bg,tc}=listStyle(statusCol,s.status||'todo');return`<div class="sub-row"><input type="checkbox" class="sub-cb" ${s.done?'checked':''} onchange="togSub(${t.id},${s.id})"><input class="sub-name ${s.done?'done':''}" value="${esc(s.title)}" placeholder="Subtask name" onchange="editSub(${t.id},${s.id},this.value)" onkeydown="if(event.key==='Enter')this.blur()"><button class="sig-badge" style="background:${bg};color:${tc};font-size:10px;padding:2px 8px;cursor:pointer" onclick="cycleSubStatus(${t.id},${s.id})">${s.status||'todo'}</button><button class="sub-del" onclick="delSub(${t.id},${s.id})">✕</button></div>`}).join('');
-  return`<tr class="sub-section"><td colspan="${columns.length+4}"><div class="sub-inner"><div class="sub-header"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>Subtasks · ${(t.subtasks||[]).length}</div>${rows}<button class="sub-add" onclick="addSub(${t.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add subtask</button></div></td></tr>`;
+  const priorityCol=columns.find(c=>c.id==='priority');
+  const rows=(t.subtasks||[]).map(s=>{
+    const{bg:sbg,tc:stc}=listStyle(statusCol,s.status||'todo');
+    const{bg:pbg,tc:ptc}=listStyle(priorityCol,s.priority||'medium');
+    const oid=`sub-owner-${t.id}-${s.id}`;
+    const ownerChips=(s.owners||[]).map(a=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--brand-light);color:var(--brand);border-radius:20px;padding:1px 7px 1px 4px;font-size:10px;font-weight:500">${a[0].toUpperCase()} ${esc(a)}<button style="background:none;border:none;cursor:pointer;font-size:9px;color:var(--brand);padding:0 0 0 2px" onclick="rmSubOwner(${t.id},${s.id},'${esc(a)}')">×</button></span>`).join('');
+    return`<div class="sub-row" data-sid="${s.id}">
+      <input type="checkbox" class="sub-cb" ${s.done?'checked':''} onchange="togSub(${t.id},${s.id})">
+      <input class="sub-name ${s.done?'done':''}" value="${esc(s.title)}" placeholder="Subtask name" onchange="editSub(${t.id},${s.id},this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="min-width:120px">
+      <button class="sig-badge" style="background:${sbg};color:${stc};font-size:10px;padding:2px 8px;cursor:pointer;flex-shrink:0" id="subbadge-s-${t.id}-${s.id}" onclick="showListDD('sub_${t.id}_${s.id}','status','${s.status||'todo'}',columns.find(c=>c.id==='status'),document.getElementById('subbadge-s-${t.id}-${s.id}'))">${s.status||'todo'}</button>
+      <button class="sig-badge" style="background:${pbg};color:${ptc};font-size:10px;padding:2px 8px;cursor:pointer;flex-shrink:0" id="subbadge-p-${t.id}-${s.id}" onclick="showListDD('sub_${t.id}_${s.id}','priority','${s.priority||'medium'}',columns.find(c=>c.id==='priority'),document.getElementById('subbadge-p-${t.id}-${s.id}'))">${s.priority||'medium'}</button>
+      <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;min-width:80px">${ownerChips}<button style="background:none;border:1px dashed var(--border-strong);border-radius:20px;padding:1px 7px;font-size:10px;color:var(--text-3);cursor:pointer" onclick="openSubOwnerDD(${t.id},${s.id},this)">+ Add</button></div>
+      <button class="sub-del" onclick="delSub(${t.id},${s.id})">✕</button>
+    </div>`;
+  }).join('');
+  return`<tr class="sub-section"><td colspan="${columns.length+4}"><div class="sub-inner">
+    <div class="sub-header"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>Subtasks · ${(t.subtasks||[]).length}</div>
+    ${rows}
+    <button class="sub-add" onclick="addSub(${t.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add subtask</button>
+  </div></td></tr>`;
 }
 async function cycleSubStatus(tid,sid){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;const opts=['todo','progress','waiting','done'];s.status=opts[(opts.indexOf(s.status||'todo')+1)%opts.length];if(s.status==='done')s.done=true;renderTable();save();await cuTask(t)}
 
-function renderRow(t,i,arr){
+// Subtask owner
+function openSubOwnerDD(tid,sid,btn){
+  document.querySelectorAll('.a-dd').forEach(d=>d.remove());
+  const t=GT().find(x=>x.id===tid);if(!t)return;
+  const s=t.subtasks.find(x=>x.id===sid);if(!s)return;
+  s.owners=s.owners||[];
+  const sugg=getTeamSugg();
+  const dd=document.createElement('div');dd.className='a-dd';
+  const rect=btn.getBoundingClientRect();
+  dd.style.top=(rect.bottom+4)+'px';dd.style.left=rect.left+'px';
+  dd.innerHTML=`<input class="a-inp" placeholder="Search…" oninput="filterSubOwnerOpts(this,${tid},${sid})" onkeydown="if(event.key==='Enter'){addSubOwnerCustom(${tid},${sid},this.value);this.value=''}">
+    <div id="sub-aopts-${tid}-${sid}">${sugg.map(m=>`<div class="a-opt" onclick="toggleSubOwner(${tid},${sid},'${esc(m.name)}')"><div class="a-av">${m.photo?`<img src="${m.photo}" alt="">`:m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${s.owners.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('')}</div>`;
+  document.body.appendChild(dd);
+  setTimeout(()=>document.addEventListener('click',function h(e){if(!dd.contains(e.target)&&!btn.contains(e.target)){dd.remove();document.removeEventListener('click',h)}},true),10);
+}
+function filterSubOwnerOpts(inp,tid,sid){
+  const v=inp.value.toLowerCase(),t=GT().find(x=>x.id===tid);if(!t)return;
+  const s=t.subtasks.find(x=>x.id===sid);if(!s)return;
+  s.owners=s.owners||[];
+  const el=document.getElementById(`sub-aopts-${tid}-${sid}`);
+  if(el)el.innerHTML=getTeamSugg().filter(m=>m.name.toLowerCase().includes(v)).map(m=>`<div class="a-opt" onclick="toggleSubOwner(${tid},${sid},'${esc(m.name)}')"><div class="a-av">${m.name[0].toUpperCase()}</div><span>${esc(m.name)}</span>${s.owners.includes(m.name)?'<span style="margin-left:auto;color:var(--brand)">✓</span>':''}</div>`).join('');
+}
+async function toggleSubOwner(tid,sid,name){
+  const t=GT().find(x=>x.id===tid);if(!t)return;
+  const s=t.subtasks.find(x=>x.id===sid);if(!s)return;
+  s.owners=s.owners||[];
+  s.owners=s.owners.includes(name)?s.owners.filter(x=>x!==name):[...s.owners,name];
+  document.querySelectorAll('.a-dd').forEach(d=>d.remove());
+  renderTable();save();await cuTask(t);
+}
+async function rmSubOwner(tid,sid,name){const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;s.owners=(s.owners||[]).filter(x=>x!==name);renderTable();save();await cuTask(t)}
+async function addSubOwnerCustom(tid,sid,name){name=name.trim();if(!name)return;const t=GT().find(x=>x.id===tid);if(!t)return;const s=t.subtasks.find(x=>x.id===sid);if(!s)return;s.owners=s.owners||[];if(!s.owners.includes(name))s.owners.push(name);renderTable();save();await cuTask(t)}
+
+function renderRow(t,i,arr,extraClass=''){
   const od=isOD(t.dueDate,t.status),isLive=myLiveTask===t.task&&myLiveTask!==null,isSel=selectedIds.has(t.id);
   const cells=columns.map(c=>`<td>${renderCell(t,c)}</td>`).join('');
-  return`<tr class="${od?'od-row':''} ${isLive?'live-row':''} ${isSel?'selected-row':''}" data-tid="${t.id}" draggable="true" ondragstart="rDS(event,${t.id})" ondragover="rDO(event)" ondragleave="rDL(event)" ondrop="rDD(event,${t.id})">
+  return`<tr class="${od?'od-row':''} ${isLive?'live-row':''} ${isSel?'selected-row':''} ${extraClass}" data-tid="${t.id}" draggable="true" ondragstart="rDS(event,${t.id})" ondragover="rDO(event)" ondragleave="rDL(event)" ondrop="rDD(event,${t.id})">
     <td class="cb-cell"><input type="checkbox" class="row-cb" ${isSel?'checked':''} onchange="toggleSelect(${t.id},this.checked)"></td>
     <td class="live-cell"><button class="live-btn ${isLive?'is-live':''}" onclick="setLiveTask(${t.id})" title="${isLive?'Live — click to unset':'Set as live task'}"><span class="row-live-dot"></span></button></td>
     ${cells}
